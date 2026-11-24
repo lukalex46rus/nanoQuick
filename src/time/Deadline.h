@@ -61,22 +61,22 @@ private:
     uint32_t last_;
     uint32_t step_;
 };
-// Короткий срок на субмиллисекундной шкале. Разрешение 8 мкс.
-// Максимальный интервал — 65535 отсчётов = 524 мс.
+// Короткий срок на субмиллисекундной шкале. Разрешение 4 мкс (SUB_US).
+// Максимальный интервал — 65535 отсчётов ≈ 262 мс.
 // Арифметика uint16_t: корректна при переполнении.
 class ShortDeadline {
 public:
     constexpr ShortDeadline() : start_(0), span_(0), armed_(false) {}
 
-    inline void arm(uint16_t subs) {
+    HW_INLINE void arm(uint16_t subs) {
         start_ = time::subNow();
         span_  = subs;
         armed_ = true;
     }
 
-    inline void armUs(uint16_t us_) { arm((uint16_t)(us_ / time::SUB_US)); }
+    HW_INLINE void armUs(uint16_t us_) { arm((uint16_t)(us_ / time::SUB_US)); }
 
-    inline bool expired() const {
+    HW_INLINE bool expired() const {
         return armed_ && (uint16_t)(time::subNow() - start_) >= span_;
     }
 
