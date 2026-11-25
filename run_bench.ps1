@@ -1,6 +1,8 @@
 <#
 .SYNOPSIS
     Сборка bench_*.ino с Arduino CLI 1.6.0.
+    Жёсткая остановка при первой ошибке:
+      compile → (fail? stop) → size/nm/search → upload → (fail? stop) → monitor.
     Рабочие копии складываются в .\tmp\<bench_name>\.
 #>
 
@@ -18,32 +20,47 @@ $FQBN        = "arduino:avr:nano:cpu=atmega328old"
 $MCU         = "atmega328p"
 $PORT        = "COM3"
 $BAUD        = 9600
-$MONITOR_SEC = 60
+$MONITOR_SEC = 65
 
 $BenchDir = ".\bench"
 $SrcDir   = ".\src"
 $TmpRoot  = ".\tmp"
-
 # ===============================================
 
 $ErrorActionPreference = "Stop"
-$script:HasError = $false
+$script:Stop     = $false   # взведён при любой фатальной ошибке
+$script:Stage    = "init"   # текущий этап (для итогового отчёта)
 
 function Write-Step([string]$msg) {
     Write-Host ""
     Write-Host "=== $msg ===" -ForegroundColor Cyan
 }
 
-function Invoke-Safe([scriptblock]$action, [string]$errLog) {
+function Fail([string]$msg, [string]$errLog) {
+    $script:Stop = $true
+    $line = "[$([datetime]::Now)] ERROR [$($script:Stage)]: $msg"
+    Write-Host $line -ForegroundColor Red
+    if ($errLog) { Add-Content -Path $errLog -Value $line -Encoding UTF8 }
+}
+
+function Invoke-Stage {
+    param(
+        [string]$Name,
+        [scriptblock]$Action,
+        [string]$ErrLog
+    )
+    $script:Stage = $Name
+    Write-Step $Name
+    if ($script:Stop) { return $false }
+
     try {
-        & $action
+        & $Action
         if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
+        return $true
     }
     catch {
-        $script:HasError = $true
-        $line = "[$([datetime]::Now)] ERROR: $_"
-        Write-Host $line -ForegroundColor Red
-        if ($errLog) { Add-Content -Path $errLog -Value $line -Encoding UTF8 }
+        Fail "$_" $ErrLog
+        return $false
     }
 }
 
@@ -61,6 +78,7 @@ for ($i = 0; $i -lt $sketches.Count; $i++) {
     "{0,2}. {1}" -f ($i + 1), $sketches[$i].Name | Write-Host
 }
 
+$selected = $null
 do {
     $answer = Read-Host "`nКакой bench_*.ino компилируем? (номер или имя)"
     $answer = $answer.Trim()
@@ -68,8 +86,7 @@ do {
     if ($answer -match '^\d+$') {
         $idx = [int]$answer - 1
         if ($idx -ge 0 -and $idx -lt $sketches.Count) {
-            $selected = $sketches[$idx]
-            break
+            $selected = $sketches[$idx]; break
         }
     } else {
         $match = $sketches | Where-Object { $_.Name -eq $answer -or $_.BaseName -eq $answer }
@@ -81,8 +98,7 @@ do {
 $benchName = $selected.BaseName
 $workDir   = Join-Path $TmpRoot $benchName
 $buildDir  = Join-Path $workDir "build"
-$logDir    = Join-Path $workDir "log"
-$logoDir   = Join-Path $workDir "logo"
+$logDir    = Join-Path $workDir "logs"
 $inoTarget = Join-Path $workDir $selected.Name
 $srcTarget = Join-Path $workDir "src"
 
@@ -90,115 +106,127 @@ Write-Host "`nВыбран: $($selected.Name)" -ForegroundColor Green
 Write-Host "Рабочая папка: $workDir"        -ForegroundColor Green
 
 # ---------- 3. Подготовка рабочей папки ----------
-Write-Step "Подготовка '$workDir'"
-
-if (Test-Path $workDir) {
-    Write-Host "Удаляем старую рабочую копию..." -ForegroundColor Yellow
-    Remove-Item $workDir -Recurse -Force
-}
-New-Item -ItemType Directory -Path $workDir   | Out-Null
-New-Item -ItemType Directory -Path $buildDir  | Out-Null
-New-Item -ItemType Directory -Path $logDir    | Out-Null
-New-Item -ItemType Directory -Path $logoDir   | Out-Null
-
-Copy-Item -Path $selected.FullName -Destination $inoTarget -Force
-Copy-Item -Path $SrcDir -Destination $srcTarget -Recurse -Force
-
-Write-Host "OK: скетч и src скопированы в tmp" -ForegroundColor Green
+$ok = Invoke-Stage "Подготовка '$workDir'" {
+    if (Test-Path $workDir) { Remove-Item $workDir -Recurse -Force }
+    New-Item -ItemType Directory -Path $workDir  | Out-Null
+    New-Item -ItemType Directory -Path $buildDir | Out-Null
+    New-Item -ItemType Directory -Path $logDir   | Out-Null
+    Copy-Item -Path $selected.FullName -Destination $inoTarget -Force
+    Copy-Item -Path $SrcDir -Destination $srcTarget -Recurse -Force
+    Write-Host "OK: скетч и src скопированы в tmp" -ForegroundColor Green
+} $null
 
 # ---------- 4. Пути к логам ----------
-$errLog     = Join-Path $logDir "error_$benchName.txt"
-$monLog     = Join-Path $logDir "monitor_$benchName.txt"
-$sizeLog    = Join-Path $logDir "size_$benchName.txt"
-$nmLog      = Join-Path $logDir "nm_$benchName.txt"
-$nmFilterLog= Join-Path $logDir "nmfilter_$benchName.txt"
-$compileLog = Join-Path $logDir "compile_$benchName.txt"
+$errLog      = Join-Path $logDir "error_$benchName.txt"
+$monLog      = Join-Path $logDir "monitor_$benchName.txt"
+$sizeLog     = Join-Path $logDir "size_$benchName.txt"
+$nmLog       = Join-Path $logDir "nm_$benchName.txt"
+$nmFilterLog = Join-Path $logDir "nmfilter_$benchName.txt"
+$compileLog  = Join-Path $logDir "compile_$benchName.txt"
 
-"" | Set-Content -Path $errLog -Encoding UTF8
+if ($ok) { "" | Set-Content -Path $errLog -Encoding UTF8 }
 
 # ---------- 5. Компиляция ----------
-Write-Step "Компиляция ($FQBN)"
-Invoke-Safe {
-    arduino-cli compile --fqbn $FQBN --build-path $buildDir $workDir 2>&1 |
-        Tee-Object -FilePath $compileLog
-} $errLog
+if (-not $script:Stop) {
+    Invoke-Stage "Компиляция ($FQBN)" {
+        arduino-cli compile --fqbn $FQBN --build-path $buildDir $workDir 2>&1 |
+            Tee-Object -FilePath $compileLog
+    } $errLog | Out-Null
+}
 
-# ---------- 6. Размеры ----------
 $elf = Join-Path $buildDir "$benchName.ino.elf"
-if (Test-Path $elf) {
-    Write-Step "Размер прошивки (avr-size)"
-    Invoke-Safe {
-        avr-size --format=avr --mcu=$MCU $elf 2>&1 | Tee-Object -FilePath $sizeLog
-    } $errLog
 
-    Write-Step "Символы (avr-nm)"
-    Invoke-Safe {
-        avr-nm -S --size-sort -td $elf 2>&1 | Tee-Object -FilePath $nmLog
-    } $errLog
+# ---------- 6. Размеры + nm + поиск (только если компиляция ок) ----------
+if (-not $script:Stop) {
+    if (Test-Path $elf) {
+        Invoke-Stage "Размер прошивки (avr-size)" {
+            avr-size --format=avr --mcu=$MCU $elf 2>&1 | Tee-Object -FilePath $sizeLog
+        } $errLog | Out-Null
 
-        # ---------- 6b. Поиск по символам ----------
-    Write-Step "Поиск по символам (avr-nm | Select-String)"
-    $pattern = Read-Host "Введите шаблон поиска (Enter = пропустить)"
+        Invoke-Stage "Символы (avr-nm)" {
+            avr-nm -S --size-sort -td $elf 2>&1 | Tee-Object -FilePath $nmLog
+        } $errLog | Out-Null
 
-    if ([string]::IsNullOrWhiteSpace($pattern)) {
-        Write-Host "Поиск пропущен (пустой шаблон)." -ForegroundColor Yellow
-    } else {
-        Write-Host "Ищем: $pattern" -ForegroundColor Yellow
-        Invoke-Safe {
-            $matches = & avr-nm -S --size-sort -td $elf | Select-String $pattern
-            if ($matches) {
-                $matches | ForEach-Object {
-                    Write-Host $_.Line -ForegroundColor Green
-                }
-                $matches | ForEach-Object { $_.Line } |
-                    Set-Content -Path $nmFilterLog -Encoding UTF8
+        if (-not $script:Stop) {
+            $script:Stage = "Поиск по символам"
+            Write-Step "Поиск по символам (avr-nm | Select-String)"
+            $pattern = Read-Host "Введите шаблон поиска (Enter = пропустить)"
+
+            if ([string]::IsNullOrWhiteSpace($pattern)) {
+                Write-Host "Поиск пропущен (пустой шаблон)." -ForegroundColor Yellow
             } else {
-                $emptyMsg = "# Совпадений по шаблону '$pattern' не найдено"
-                Write-Host $emptyMsg -ForegroundColor Yellow
-                Set-Content -Path $nmFilterLog -Value $emptyMsg -Encoding UTF8
+                Write-Host "Ищем: $pattern" -ForegroundColor Yellow
+                Invoke-Stage "Поиск по символам" {
+                    $matches = & avr-nm -S --size-sort -td $elf | Select-String $pattern
+                    if ($matches) {
+                        $matches | ForEach-Object { Write-Host $_.Line -ForegroundColor Green }
+                        $matches | ForEach-Object { $_.Line } |
+                            Set-Content -Path $nmFilterLog -Encoding UTF8
+                    } else {
+                        $emptyMsg = "# Совпадений по шаблону '$pattern' не найдено"
+                        Write-Host $emptyMsg -ForegroundColor Yellow
+                        Set-Content -Path $nmFilterLog -Value $emptyMsg -Encoding UTF8
+                    }
+                } $errLog | Out-Null
             }
-        } $errLog
+        }
+    } else {
+        $script:Stage = "Размеры"
+        Fail "ELF не найден: $elf" $errLog
+    }
+}
+
+# ---------- 7. Прошивка (только если всё выше ок) ----------
+$hex = Join-Path $buildDir "$benchName.ino.hex"
+if (-not $script:Stop) {
+    if (Test-Path $hex) {
+        Invoke-Stage "Прошивка на $PORT" {
+            arduino-cli upload --fqbn $FQBN -p $PORT --input-file $hex 2>&1
+        } $errLog | Out-Null
+    } else {
+        $script:Stage = "Прошивка"
+        Fail "HEX не найден: $hex" $errLog
+    }
+}
+
+# ---------- 8. Монитор (только если прошивка ок) ----------
+# ---------- 8. Монитор ----------
+if (-not $script:Stop) {
+    $script:Stage = "Монитор"
+
+    # --- запрос длительности ---
+    $monitorSec = $null   # $null = без ограничений
+    do {
+        $ans = Read-Host "Сколько секунд работать монитору? (Enter = без ограничений)"
+        $ans = $ans.Trim()
+        if ([string]::IsNullOrEmpty($ans)) {
+            $monitorSec = $null
+            break
+        }
+        if ($ans -match '^\d+$' -and [int]$ans -gt 0) {
+            $monitorSec = [int]$ans
+            break
+        }
+        Write-Host "Введите положительное целое число или оставьте пустым." -ForegroundColor Red
+    } while ($true)
+
+    if ($null -eq $monitorSec) {
+        Write-Host "`n=== Монитор порта $PORT ($BAUD бод, без ограничений) -> $monLog ===" -ForegroundColor Cyan
+    } else {
+        Write-Host "`n=== Монитор порта $PORT ($BAUD бод, $monitorSec сек) -> $monLog ===" -ForegroundColor Cyan
     }
 
-} else {
-    $msg = "[$([datetime]::Now)] ERROR: ELF не найден: $elf"
-    Write-Host $msg -ForegroundColor Red
-    Add-Content -Path $errLog -Value $msg -Encoding UTF8
-    $script:HasError = $true
-}
-
-# ---------- 7. Прошивка ----------
-$hex = Join-Path $buildDir "$benchName.ino.hex"
-if (Test-Path $hex) {
-    Write-Step "Прошивка на $PORT"
-    Invoke-Safe {
-        arduino-cli upload --fqbn $FQBN -p $PORT --input-file $hex 2>&1
-    } $errLog
-} else {
-    $msg = "[$([datetime]::Now)] ERROR: HEX не найден: $hex (прошивка пропущена)"
-    Write-Host $msg -ForegroundColor Red
-    Add-Content -Path $errLog -Value $msg -Encoding UTF8
-    $script:HasError = $true
-}
-
-# ---------- 8. Монитор на 60 секунд ----------
-if (-not $script:HasError) {
-    Write-Step "Монитор порта $PORT ($BAUD бод, $MONITOR_SEC сек) -> $monLog"
-
-    # ---- Проверяем поддержку --duration у текущего arduino-cli ----
-    $cliHelp = & arduino-cli monitor --help 2>&1 | Out-String
+    $cliHelp          = & arduino-cli monitor --help 2>&1 | Out-String
     $supportsDuration = $cliHelp -match '--duration'
 
-    $monArgs = @(
-        "monitor", "-p", $PORT,
-        "--config", "baudrate=$BAUD",
-        "--timestamp"
-    )
-    if ($supportsDuration) {
-        $monArgs += @("--duration", "${MONITOR_SEC}s")
-        Write-Host "Используем --duration ${MONITOR_SEC}s" -ForegroundColor Yellow
+    $monArgs = @("monitor", "-p", $PORT, "--config", "baudrate=$BAUD", "--timestamp")
+    if ($monitorSec -ne $null -and $supportsDuration) {
+        $monArgs += @("--duration", "${monitorSec}s")
+        Write-Host "Используем --duration ${monitorSec}s" -ForegroundColor Yellow
+    } elseif ($monitorSec -ne $null) {
+        Write-Host "Флаг --duration не поддерживается — остановим монитор по таймауту" -ForegroundColor Yellow
     } else {
-        Write-Host "Флаг --duration не поддерживается, остановим монитор по таймауту" -ForegroundColor Yellow
+        Write-Host "Ограничение по времени не задано. Остановить: Ctrl+C." -ForegroundColor Yellow
     }
 
     $monErrTmp = Join-Path $logDir "monitor_stderr.tmp"
@@ -211,88 +239,107 @@ if (-not $script:HasError) {
 
     $killedByUs = $false
 
-    if ($supportsDuration) {
-        # даём CLI завершиться самому (duration + запас)
-        $deadline = (Get-Date).AddSeconds($MONITOR_SEC + 10)
+    if ($null -eq $monitorSec) {
+        # --- без ограничения: ждём, пока пользователь нажмёт Ctrl+C или процесс умрёт сам ---
+        Write-Host "Монитор работает... нажмите Ctrl+C для остановки." -ForegroundColor Yellow
+        try {
+            # Ждём вечно, пока процесс жив; если пользователь жмёт Ctrl+C —
+            # PowerShell прерывает ожидание, и мы попадаем в finally/catch.
+            while (-not $proc.HasExited) {
+                Start-Sleep -Milliseconds 250
+            }
+        }
+        catch [System.Management.Automation.Host.HostException] {
+            Write-Host "`nПрервано пользователем (Ctrl+C)." -ForegroundColor Yellow
+        }
+        catch {
+            Write-Host "`nПрерывание: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+        finally {
+            if (-not $proc.HasExited) {
+                Write-Host "Останавливаем монитор..." -ForegroundColor Yellow
+                $killedByUs = $true
+                try { $proc.Kill() } catch {}
+            }
+        }
     } else {
-        # ждём ровно $MONITOR_SEC секунд, потом сами гасим
-        $deadline = (Get-Date).AddSeconds($MONITOR_SEC)
+        # --- с ограничением: ждём N секунд (или duration+10, если поддерживается --duration) ---
+        if ($supportsDuration) {
+            $deadline = (Get-Date).AddSeconds($monitorSec + 10)
+        } else {
+            $deadline = (Get-Date).AddSeconds($monitorSec)
+        }
+        while (((Get-Date) -lt $deadline) -and (-not $proc.HasExited)) {
+            Start-Sleep -Milliseconds 250
+        }
+        if (-not $proc.HasExited) {
+            Write-Host "Останавливаем монитор..." -ForegroundColor Yellow
+            $killedByUs = $true
+            try { $proc.Kill() } catch {}
+        }
     }
 
-    while (((Get-Date) -lt $deadline) -and (-not $proc.HasExited)) {
-        Start-Sleep -Milliseconds 250
-    }
-
-    if (-not $proc.HasExited) {
-        Write-Host "Останавливаем монитор..." -ForegroundColor Yellow
-        $killedByUs = $true
-        try { $proc.Kill() } catch {}
-    }
     $proc.WaitForExit()
 
-    # ---- Разбираем stderr ----
+    # --- разбор stderr ---
     if (Test-Path $monErrTmp) {
         $stderr = Get-Content $monErrTmp -Raw
         Remove-Item $monErrTmp -Force
 
         if ($stderr -and $stderr.Trim()) {
-            # ожидаемые при принудительном kill
+            Add-Content -Path (Join-Path $logDir "monitor_stderr.txt") `
+                        -Value $stderr -Encoding UTF8
+
             $expectedKill = $stderr -match 'I/O operation has been aborted' `
                         -or $stderr -match 'serial port closed' `
                         -or $stderr -match 'The operation was canceled' `
                         -or $stderr -match 'Access is denied' `
                         -or $stderr -match 'broken pipe' `
                         -or $stderr -match 'EOF'
-
-            # ожидаемые при отсутствии платы/порта (не наша вина)
             $expectedMissing = $stderr -match 'No monitor available' `
-                           -or $stderr -match 'not found' `
-                           -or $stderr -match 'Port monitor'
+                            -or $stderr -match 'not found'
 
-            # всегда в отдельный лог для истории
-            Add-Content -Path (Join-Path $logDir "monitor_stderr.txt") `
-                        -Value $stderr -Encoding UTF8
-
-            if ($killedByUs -and ($expectedKill -or -not $stderr.Trim())) {
-                Write-Host "Монитор остановлен по таймауту (штатно)." -ForegroundColor Yellow
+            if ($killedByUs -and $expectedKill) {
+                Write-Host "Монитор остановлен принудительно (штатно)." -ForegroundColor Yellow
             }
             elseif ($expectedMissing) {
-                # порт занят/монитора нет — тоже не считаем фатальной ошибкой всей сборки
-                Write-Host "Монитор не смог стартовать (нет доступа к порту)." -ForegroundColor Yellow
-                Add-Content -Path $errLog -Value "[$([datetime]::Now)] WARN monitor: $stderr" -Encoding UTF8
-                $script:HasError = $true
+                Fail "Монитор не смог стартовать: $stderr" $errLog
             }
             else {
-                # реальное падение CLI (например, exit=1 без kill)
-                $script:HasError = $true
-                $line = "[$([datetime]::Now)] MONITOR ERROR (exit=$($proc.ExitCode)): $stderr"
-                Write-Host $line -ForegroundColor Red
-                Add-Content -Path $errLog -Value $line -Encoding UTF8
+                Fail "Монитор завершился с ошибкой (exit=$($proc.ExitCode)): $stderr" $errLog
             }
         }
     }
 
-    if ($killedByUs) {
-        Write-Host "Монитор завершён (таймаут $MONITOR_SEC сек). Лог: $monLog" -ForegroundColor Green
-    } elseif ($proc.ExitCode -eq 0) {
-        Write-Host "Монитор завершился штатно. Лог: $monLog" -ForegroundColor Green
+    if (-not $script:Stop) {
+        if ($killedByUs) {
+            if ($null -eq $monitorSec) {
+                Write-Host "Монитор остановлен пользователем. Лог: $monLog" -ForegroundColor Green
+            } else {
+                Write-Host "Монитор завершён (таймаут $monitorSec сек). Лог: $monLog" -ForegroundColor Green
+            }
+        } elseif ($proc.ExitCode -eq 0) {
+            Write-Host "Монитор завершился штатно. Лог: $monLog" -ForegroundColor Green
+        } else {
+            Fail "Монитор завершился с кодом $($proc.ExitCode)" $errLog
+        }
     }
-} else {
-    Write-Host "`nИз-за ошибок монитор не запускался." -ForegroundColor Yellow
 }
 
 # ---------- 9. Итог ----------
 Write-Step "Готово"
 Write-Host "Проект : $workDir"
 Write-Host "Логи   : $logDir"
-if (Test-Path $errLog) {
-    if ((Get-Item $errLog).Length -gt 0) {
-        Write-Host "`n--- СОДЕРЖИМОЕ $errLog ---" -ForegroundColor Red
+
+if ($script:Stop) {
+    Write-Host "`nСБОРКА ОСТАНОВЛЕНА на этапе: $($script:Stage)" -ForegroundColor Red
+    if ((Test-Path $errLog) -and (Get-Item $errLog).Length -gt 0) {
+        Write-Host "--- СОДЕРЖИМОЕ $errLog ---" -ForegroundColor Red
         Get-Content $errLog -Encoding UTF8 | ForEach-Object { Write-Host $_ -ForegroundColor Red }
         Write-Host "--- КОНЕЦ ---`n" -ForegroundColor Red
-        exit 1
-    } else {
-        Write-Host "Ошибок нет." -ForegroundColor Green
     }
+    exit 1
 }
+
+Write-Host "Ошибок нет. Все этапы пройдены." -ForegroundColor Green
 exit 0
