@@ -74,16 +74,16 @@
                 out_high  = 'out_high\s*=\s*(\d+)'
                 tog_read  = 'tog_read\s*=\s*(\d+)'
             }
-            Expected = @{
-                portB_bef = 2
-                ddrB_bef  = 0
-                portB_aft = 0
-                ddrB_aft  = 1
-                pull_read = 1
-                out_high  = 1
-                tog_read  = 0
-            }
-            Notes = "portB_bef=2 (PB1 pull-up); portB_aft=0 (P=PB0 clr), ddrB_aft=1 (PB0 out)"
+        	Expected = @{
+            	portB_bef = 2
+            	ddrB_bef  = 0
+            	portB_aft = 2      # PB1 pull-up остаётся; PB0 clr
+            	ddrB_aft  = 1
+            	pull_read = 1
+            	out_high  = 1
+            	tog_read  = 0
+        	}
+        	Notes = "маски 0x03: PB5/D13 трогает old bootloader (DDRB|=32); PINB читать нельзя сразу после записи — проверяем PORTB"
         }
 
         bench_mcu = @{
