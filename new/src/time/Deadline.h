@@ -93,10 +93,10 @@ public:
         armed_ = true;
     }
 
-    // Округляем вверх: таймаут не должен срабатывать раньше запрошенного.
-    // Для us_ кратных SUB_US поведение идентично делению.
+    // Округляем вверх в 32 битах: на AVR unsigned int = 16 бит, и us_+3
+    // завернулось бы при us_ >= 65533 -> arm(0) -> мгновенный ложный Timeout.
     HW_INLINE void armUs(uint16_t us_) {
-        arm((uint16_t)((us_ + (time::SUB_US - 1U)) / time::SUB_US));
+        arm((uint16_t)(((uint32_t)us_ + (time::SUB_US - 1U)) / time::SUB_US));
     }
 
     HW_INLINE bool expired() const {
