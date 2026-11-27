@@ -138,8 +138,11 @@ function Invoke-Nm([string]$elf, [string]$logDir, [string]$benchName) {
 function Parse-Monitor([string]$text, $patterns) {
     $vals = @{}
     foreach ($k in $patterns.Keys) {
-        $m = [regex]::Match($text, $patterns[$k])
-        if ($m.Success) { $vals[$k] = [int64]$m.Groups[1].Value } else { $vals[$k] = $null }
+        # последнее совпадение: периодические бенчи печатают серию,
+        # первая итерация может включать время setup
+        $ms = [regex]::Matches($text, $patterns[$k])
+        if ($ms.Count -gt 0) { $vals[$k] = [int64]$ms[$ms.Count-1].Groups[1].Value }
+        else                 { $vals[$k] = $null }
     }
     return $vals
 }
