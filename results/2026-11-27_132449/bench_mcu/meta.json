@@ -1,0 +1,27 @@
+{
+  "bench": "bench_mcu",
+  "timestamp": "2026-11-27T13:27:45.2217424+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1054,
+  "sram": 234,
+  "expected": {
+    "out_before": 0,
+    "pull_after": 0,
+    "out_after": 1,
+    "pull_before": 1,
+    "mask_keep": 2
+  },
+  "range": null,
+  "info": null,
+  "actual": {
+    "pull_before": 1,
+    "out_after": 0,
+    "mask_keep": 0,
+    "out_before": 0,
+    "pull_after": 0
+  },
+  "pass": false,
+  "details": "out_before=0, pull_after=0, out_after=0(exp=1), pull_before=1, mask_keep=0(exp=2)",
+  "notes": "flip на входе переключает pull-up (pull_before=1, pull_after=0)"
+}

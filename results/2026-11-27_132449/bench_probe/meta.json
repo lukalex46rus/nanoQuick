@@ -1,0 +1,37 @@
+{
+  "bench": "bench_probe",
+  "timestamp": "2026-11-27T13:29:00.9870168+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1604,
+  "sram": 274,
+  "expected": {
+    "TIFR2": 0,
+    "TCCR2A": 2,
+    "TCCR2B": 4,
+    "OCR2A": 249,
+    "TIMSK2": 2,
+    "OCR2B": 0
+  },
+  "range": {
+    "delta": {
+      "Max": 1010,
+      "Min": 990
+    }
+  },
+  "info": null,
+  "actual": {
+    "TIFR2": 4,
+    "OCR2B": 0,
+    "delta": 1092,
+    "OCR2A": 249,
+    "TCCR2B": 4,
+    "TIMSK2": 2,
+    "counter": 1092,
+    "core_ms": 1091,
+    "TCCR2A": 2
+  },
+  "pass": false,
+  "details": "TIFR2=4(exp=0), TCCR2A=2, TCCR2B=4, OCR2A=249, TIMSK2=2, OCR2B=0, delta=1092(out 990..1010)",
+  "notes": "delta ~1000 за 1 с; TIFR2=0 в норме"
+}

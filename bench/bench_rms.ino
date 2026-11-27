@@ -2,28 +2,14 @@
 #include "src/time/Tick.h"
 #include "src/peripheral/AdcStream.h"
 #include "src/logic/Rms.h"
+#include "dbg.h"
 
-namespace dbg {
-inline void begin(uint32_t baud) {
-    uint16_t ubrr = (uint16_t)((F_CPU / (16UL * baud)) - 1UL);
-    UBRR0H = (uint8_t)(ubrr >> 8); UBRR0L = (uint8_t)ubrr;
-    UCSR0A = 0; UCSR0B = _BV(TXEN0); UCSR0C = _BV(UCSZ01) | _BV(UCSZ00);
-}
-__attribute__((noinline)) inline void byte(uint8_t b) {
-    while (!(UCSR0A & _BV(UDRE0))) {} UDR0 = b;
-}
-inline void text(const char* s) { while (*s) byte((uint8_t)*s++); }
-__attribute__((noinline)) inline void num(uint32_t v) {
-    char buf[11]; int8_t i = 10; buf[i] = 0;
-    do { buf[--i] = (char)('0' + (v % 10u)); v /= 10u; } while (v && i > 0);
-    text(&buf[i]);
-}
-__attribute__((noinline)) inline void row(const char* tag, uint32_t v) {
-    text(tag); num(v); text("\r\n");
-}
-inline void flush() { while (!(UCSR0A & _BV(TXC0))) {} UCSR0A |= _BV(TXC0); }
-}
-
+// ============================================================================
+// bench_rms — isqrt32, synth const/alt, real RMS за 0.5 с (bandgap).
+// Платформа: ATmega328P/328, Nano. Контекст: main.
+// Ожидание: isqrt_65000=254, isqrt_max=65535, synth_const=239, synth_alt=254,
+// real_rms ~239 (bandgap DC ~1.1 В).
+// ============================================================================
 using AdcPro = adc::AdcStream<adc::Ref::AVcc, adc::Clk::Div128, adc::BANDGAP>;
 
 __attribute__((noinline)) static uint16_t synthConst(uint16_t v) {
@@ -74,9 +60,9 @@ void setup() {
     AdcPro::stop();
 
     dbg::text("\r\n=== S2: RMS DC+AC ===\r\n");
-    dbg::row("isqrt_65000 =", logic::isqrt32(65000UL));   // 254
-    dbg::row("isqrt_max   =", logic::isqrt32(0xFFFFFFFFUL)); // 65535
-    dbg::row("synth_const =", c);    // 239 (DC входит)
+    dbg::row("isqrt_65000 =", logic::isqrt32(65000UL));      // 254
+    dbg::row("isqrt_max   =", logic::isqrt32(0xFFFFFFFFUL));  // 65535
+    dbg::row("synth_const =", c);    // 239
     dbg::row("synth_alt   =", a);    // 254
     dbg::row("real_rms    =", rr);   // ~239
     dbg::flush();

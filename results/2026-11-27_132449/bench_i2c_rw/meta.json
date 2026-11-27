@@ -1,0 +1,30 @@
+{
+  "bench": "bench_i2c_rw",
+  "timestamp": "2026-11-27T13:27:07.3624556+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 2066,
+  "sram": 230,
+  "expected": {
+    "rd00": 1,
+    "wrFF": 1,
+    "wr00": 1,
+    "val00": 0,
+    "rdFF": 1
+  },
+  "range": null,
+  "info": [
+    "valFF"
+  ],
+  "actual": {
+    "rd00": 0,
+    "wrFF": 0,
+    "wr00": 0,
+    "val00": 170,
+    "rdFF": 0,
+    "valFF": 170
+  },
+  "pass": false,
+  "details": "rd00=0(exp=1), wrFF=0(exp=1), wr00=0(exp=1), val00=170(exp=0), rdFF=0(exp=1), valFF=170(info)",
+  "notes": "pointer-less read: val00=0; valFF — информационно"
+}

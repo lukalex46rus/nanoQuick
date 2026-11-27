@@ -1,34 +1,17 @@
 #include <Arduino.h>
 #include "src/hw/Pin.h"
+#include "src/hw/Atomic.h"
 #include "src/time/Tick.h"
 #include "src/time/Deadline.h"
+#include "dbg.h"
 
+// ============================================================================
+// bench_probe — ISR census: регистры Timer2 + counter/delta/TIFR2 раз в 1 с.
+// Платформа: ATmega328P/328, Nano. Контекст: main.
+// Ожидание: TIMSK2=2, TCCR2A=2, TCCR2B=4, OCR2A=249, OCR2B=0;
+// delta ~1000 за 1 с; TIFR2=0 в норме.
+// ============================================================================
 using Led = hw::board::D13;
-
-extern volatile uint32_t isrCompA;
-extern volatile uint32_t isrCompB;
-extern volatile uint32_t isrOvf;
-
-namespace dbg {
-inline void begin(uint32_t baud) {
-    uint16_t ubrr = (uint16_t)((F_CPU / (16UL * baud)) - 1UL);
-    UBRR0H = (uint8_t)(ubrr >> 8); UBRR0L = (uint8_t)ubrr;
-    UCSR0A = 0; UCSR0B = _BV(TXEN0); UCSR0C = _BV(UCSZ01) | _BV(UCSZ00);
-}
-__attribute__((noinline)) inline void byte(uint8_t b) {
-    while (!(UCSR0A & _BV(UDRE0))) {} UDR0 = b;
-}
-inline void text(const char* s) { while (*s) byte((uint8_t)*s++); }
-__attribute__((noinline)) inline void num(uint32_t v) {
-    char buf[11]; int8_t i = 10; buf[i] = 0;
-    do { buf[--i] = (char)('0' + (v % 10u)); v /= 10u; } while (v && i > 0);
-    text(&buf[i]);
-}
-__attribute__((noinline)) inline void row(const char* tag, uint32_t v) {
-    text(tag); num(v); text("\r\n");
-}
-inline void flush() { while (!(UCSR0A & _BV(TXC0))) {} UCSR0A |= _BV(TXC0); }
-}
 
 static time::Period report;
 
@@ -37,31 +20,30 @@ void setup() {
     dbg::begin(9600);
     time::init();
 
-    dbg::text("\r\n--- D9: ISR census ---\r\n");
-    dbg::row("TIMSK2 =", TIMSK2);
-    dbg::row("TCCR2A =", TCCR2A);
-    dbg::row("TCCR2B =", TCCR2B);
-    dbg::row("OCR2A  =", OCR2A);
-    dbg::row("OCR2B  =", OCR2B);
+    dbg::text("\r\n--- D9: ISR census (fixed) ---\r\n");
+    dbg::row("TIMSK2 =", TIMSK2);   // 2
+    dbg::row("TCCR2A =", TCCR2A);   // 2
+    dbg::row("TCCR2B =", TCCR2B);   // 4
+    dbg::row("OCR2A  =", OCR2A);    // 249
+    dbg::row("OCR2B  =", OCR2B);    // 0
 
     report.start(time::ms(1000));
 }
 
 void loop() {
     if (report.due()) {
+        // counter инкрементируется ровно раз в 1 мс. За 1 с между
+        // предыдущим и текущим due() должно пройти ~1000 инкрементов.
+        static uint32_t prev = 0;
         uint32_t m  = time::now();
         uint32_t ms = ::millis();
-        uint32_t a  = hw::load(isrCompA);
-        uint32_t b  = hw::load(isrCompB);
-        uint32_t o  = hw::load(isrOvf);
+        uint32_t delta = m - prev;
+        prev = m;
 
-        dbg::row("counter=", m);
-        dbg::row("compA  =", a);
-        dbg::row("compB  =", b);
-        dbg::row("ovf    =", o);
-        dbg::row("sum    =", a + b + o);
-        dbg::row("core_ms=", ms);
-        dbg::row("TIFR2  =", TIFR2);
+        dbg::row("counter =", m);
+        dbg::row("delta   =", delta);      // ~1000
+        dbg::row("core_ms =", ms);
+        dbg::row("TIFR2   =", TIFR2);      // 0 в норме
         dbg::text("\r\n");
         dbg::flush();
     }

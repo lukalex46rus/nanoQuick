@@ -1,0 +1,33 @@
+{
+  "bench": "bench_tick_confirm",
+  "timestamp": "2026-11-27T13:30:35.8188961+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1812,
+  "sram": 260,
+  "expected": {
+    "TCCR2A": 2,
+    "TIMSK2": 2,
+    "TCCR2B": 4,
+    "OCR2A": 249
+  },
+  "range": {
+    "diff": {
+      "Max": 2,
+      "Min": -2
+    }
+  },
+  "info": null,
+  "actual": {
+    "TCCR2A": 2,
+    "OCR2A": 249,
+    "TCCR2B": 4,
+    "TIMSK2": 2,
+    "counter": 1084,
+    "core_ms": 1083,
+    "diff": 1
+  },
+  "pass": true,
+  "details": "TCCR2A=2, TIMSK2=2, TCCR2B=4, OCR2A=249, diff=1",
+  "notes": "diff в допуске ±2; counter монотонен"
+}

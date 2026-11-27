@@ -1,0 +1,25 @@
+{
+  "bench": "bench_atomic",
+  "timestamp": "2026-11-27T13:26:06.7567253+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1300,
+  "sram": 206,
+  "expected": {
+    "enum_rt": 2,
+    "r32": 3735928559,
+    "r8": 165,
+    "mono": 1
+  },
+  "range": null,
+  "info": null,
+  "actual": {
+    "enum_rt": 2,
+    "r8": 165,
+    "r32": 3735928559,
+    "mono": 1
+  },
+  "pass": true,
+  "details": "enum_rt=2, r32=3735928559, r8=165, mono=1",
+  "notes": "r32 — hex 0xDEADBEEF = 3735928559; static_assert trait — сборка = pass"
+}

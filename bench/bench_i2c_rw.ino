@@ -1,28 +1,15 @@
 #include <Arduino.h>
 #include "src/time/Tick.h"
 #include "src/bus/I2c.h"
+#include "dbg.h"
 
-namespace dbg {
-inline void begin(uint32_t baud) {
-    uint16_t ubrr = (uint16_t)((F_CPU / (16UL * baud)) - 1UL);
-    UBRR0H = (uint8_t)(ubrr >> 8); UBRR0L = (uint8_t)ubrr;
-    UCSR0A = 0; UCSR0B = _BV(TXEN0); UCSR0C = _BV(UCSZ01) | _BV(UCSZ00);
-}
-__attribute__((noinline)) inline void byte(uint8_t b) {
-    while (!(UCSR0A & _BV(UDRE0))) {} UDR0 = b;
-}
-inline void text(const char* s) { while (*s) byte((uint8_t)*s++); }
-__attribute__((noinline)) inline void num(uint32_t v) {
-    char buf[11]; int8_t i = 10; buf[i] = 0;
-    do { buf[--i] = (char)('0' + (v % 10u)); v /= 10u; } while (v && i > 0);
-    text(&buf[i]);
-}
-__attribute__((noinline)) inline void row(const char* tag, uint32_t v) {
-    text(tag); num(v); text("\r\n");
-}
-inline void flush() { while (!(UCSR0A & _BV(TXC0))) {} UCSR0A |= _BV(TXC0); }
-}
-
+// ============================================================================
+// bench_i2c_rw — «сырой» write/read без writeRead: проверяет pointer-less read.
+// Платформа: ATmega328P/328, Nano. Контекст: main.
+// Ожидание: wr00/rd00 = 1, val00 = 0 (IODIRA=0); wrFF/rdFF = 1, valFF —
+// информационно (после записи 0xFF в IODIRA читаем IODIRA с текущего указателя).
+// Адрес 0x26 (MCP23017, A2/A1/A0=110) — при другом адресе поправить.
+// ============================================================================
 using Bus = bus::I2c<100000, true>;
 
 void setup() {
@@ -39,10 +26,10 @@ void setup() {
     dbg::text("\r\n=== V1: I2C RW (0x26 MCP23017) ===\r\n");
     dbg::row("wr00  =", sw0.ok() ? 1 : 0);   // 1
     dbg::row("rd00  =", sr0.ok() ? 1 : 0);   // 1
-    dbg::row("val00 =", r0);                 // 0 (детерминированно)
+    dbg::row("val00 =", r0);                 // 0
     dbg::row("wrFF  =", swF.ok() ? 1 : 0);   // 1
     dbg::row("rdFF  =", srF.ok() ? 1 : 0);   // 1
-    dbg::row("valFF =", rF);                 // информационно, может <255
+    dbg::row("valFF =", rF);                 // информационно
     dbg::flush();
 }
 

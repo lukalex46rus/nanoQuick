@@ -1,0 +1,31 @@
+{
+  "bench": "bench_pin_init",
+  "timestamp": "2026-11-27T13:28:23.2108675+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1276,
+  "sram": 252,
+  "expected": {
+    "ddrB_aft": 1,
+    "out_high": 1,
+    "tog_read": 0,
+    "portB_bef": 2,
+    "ddrB_bef": 0,
+    "portB_aft": 0,
+    "pull_read": 1
+  },
+  "range": null,
+  "info": null,
+  "actual": {
+    "tog_read": 1,
+    "ddrB_bef": 32,
+    "portB_aft": 2,
+    "portB_bef": 2,
+    "pull_read": 1,
+    "out_high": 1,
+    "ddrB_aft": 33
+  },
+  "pass": false,
+  "details": "ddrB_aft=33(exp=1), out_high=1, tog_read=1(exp=0), portB_bef=2, ddrB_bef=32(exp=0), portB_aft=2(exp=0), pull_read=1",
+  "notes": "portB_bef=2 (PB1 pull-up); portB_aft=0 (P=PB0 clr), ddrB_aft=1 (PB0 out)"
+}

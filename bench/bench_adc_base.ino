@@ -1,28 +1,14 @@
 #include <Arduino.h>
 #include "src/time/Tick.h"
 #include "src/peripheral/Adc.h"
+#include "dbg.h"
 
-namespace dbg {
-inline void begin(uint32_t baud) {
-    uint16_t ubrr = (uint16_t)((F_CPU / (16UL * baud)) - 1UL);
-    UBRR0H = (uint8_t)(ubrr >> 8); UBRR0L = (uint8_t)ubrr;
-    UCSR0A = 0; UCSR0B = _BV(TXEN0); UCSR0C = _BV(UCSZ01) | _BV(UCSZ00);
-}
-__attribute__((noinline)) inline void byte(uint8_t b) {
-    while (!(UCSR0A & _BV(UDRE0))) {} UDR0 = b;
-}
-inline void text(const char* s) { while (*s) byte((uint8_t)*s++); }
-__attribute__((noinline)) inline void num(uint32_t v) {
-    char buf[11]; int8_t i = 10; buf[i] = 0;
-    do { buf[--i] = (char)('0' + (v % 10u)); v /= 10u; } while (v && i > 0);
-    text(&buf[i]);
-}
-__attribute__((noinline)) inline void row(const char* tag, uint32_t v) {
-    text(tag); num(v); text("\r\n");
-}
-inline void flush() { while (!(UCSR0A & _BV(TXC0))) {} UCSR0A |= _BV(TXC0); }
-}
-
+// ============================================================================
+// bench_adc_base — время конверсии (Slow Div128 / Fast Div16), GND/bandgap.
+// Платформа: ATmega328P/328, Nano. Контекст: main.
+// Ожидание: us_slow ~104..110 (13 тактов @128), us_fast ~13..16 (13 тактов @16);
+// gnd 0..3; bg ~200..250 (1.1 В при AVcc 5 В).
+// ============================================================================
 using AdcSlow = adc::Adc<adc::Ref::AVcc, adc::Clk::Div128>;
 using AdcFast = adc::Adc<adc::Ref::AVcc, adc::Clk::Div16>;
 
@@ -76,10 +62,10 @@ void setup() {
     AdcFast::deinit();
 
     dbg::text("\r\n=== N2: ADC base ===\r\n");
-    dbg::row("us_slow =", tSlow);   // ждём ~104..110
-    dbg::row("us_fast =", tFast);   // ждём ~13..16
-    dbg::row("gnd_s   =", gndS);    // ждём 0..3
-    dbg::row("bg_s    =", bgS);     // ждём ~200..250
+    dbg::row("us_slow =", tSlow);   // ~104..110
+    dbg::row("us_fast =", tFast);   // ~13..16
+    dbg::row("gnd_s   =", gndS);    // 0..3
+    dbg::row("bg_s    =", bgS);     // ~200..250
     dbg::row("gnd_f   =", gndF);
     dbg::row("bg_f    =", bgF);
     dbg::flush();
