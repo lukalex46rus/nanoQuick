@@ -1,0 +1,47 @@
+{
+  "bench": "bench_adc_base",
+  "timestamp": "2026-11-27T13:25:09.7372920+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1802,
+  "sram": 228,
+  "expected": null,
+  "range": {
+    "us_fast": {
+      "Max": 18,
+      "Min": 12
+    },
+    "gnd_f": {
+      "Max": 3,
+      "Min": 0
+    },
+    "us_slow": {
+      "Max": 112,
+      "Min": 100
+    },
+    "gnd_s": {
+      "Max": 3,
+      "Min": 0
+    },
+    "bg_f": {
+      "Max": 250,
+      "Min": 200
+    },
+    "bg_s": {
+      "Max": 250,
+      "Min": 200
+    }
+  },
+  "info": null,
+  "actual": {
+    "bg_s": 238,
+    "us_fast": 16,
+    "us_slow": 104,
+    "gnd_f": 0,
+    "gnd_s": 0,
+    "bg_f": 239
+  },
+  "pass": true,
+  "details": "us_fast=16, gnd_f=0, us_slow=104, gnd_s=0, bg_f=239, bg_s=238",
+  "notes": "us_slow ~104..110; us_fast ~13..16; bg ~225 при AVcc 5V"
+}

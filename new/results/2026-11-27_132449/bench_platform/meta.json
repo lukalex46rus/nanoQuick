@@ -1,0 +1,24 @@
+{
+  "bench": "bench_platform",
+  "timestamp": "2026-11-27T13:28:42.0257862+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1102,
+  "sram": 204,
+  "expected": {
+    "sz_res": 3,
+    "chip": 328,
+    "sz_stat": 1
+  },
+  "range": null,
+  "info": null,
+  "actual": {
+    "f_cpu": 16000000,
+    "sz_res": 3,
+    "chip": 328,
+    "sz_stat": 1
+  },
+  "pass": true,
+  "details": "sz_res=3, chip=328, sz_stat=1",
+  "notes": "chip=328 для 328P; f_cpu=16000000 (5V) или 8000000 (3.3V)"
+}

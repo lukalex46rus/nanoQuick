@@ -1,0 +1,33 @@
+{
+  "bench": "bench_deadline",
+  "timestamp": "2026-11-27T13:26:26.0286345+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 2602,
+  "sram": 220,
+  "expected": null,
+  "range": {
+    "sd_5us_up": {
+      "Max": 16,
+      "Min": 4
+    },
+    "dl_10ms_us": {
+      "Max": 10100,
+      "Min": 9900
+    },
+    "sd_100us": {
+      "Max": 108,
+      "Min": 96
+    }
+  },
+  "info": null,
+  "actual": {
+    "sd_100us": 100,
+    "dl_10ms_us": 10000,
+    "sd_5us_up": 8,
+    "left_1ms": 99
+  },
+  "pass": true,
+  "details": "sd_5us_up=8, dl_10ms_us=10000, sd_100us=100",
+  "notes": "sd_5us_up ~8 (16M) — проверка B1 (округление вверх); 4..16 — допуск"
+}

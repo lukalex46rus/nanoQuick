@@ -1,0 +1,31 @@
+{
+  "bench": "bench_i2c_reg",
+  "timestamp": "2026-11-27T13:26:48.3042148+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 2318,
+  "sram": 234,
+  "expected": {
+    "rd00": 1,
+    "wrFF": 1,
+    "valFF": 255,
+    "val00": 0,
+    "ping": 1,
+    "wr00": 1,
+    "rdFF": 1
+  },
+  "range": null,
+  "info": null,
+  "actual": {
+    "rd00": 0,
+    "wrFF": 0,
+    "val00": 0,
+    "rdFF": 0,
+    "wr00": 0,
+    "valFF": 0,
+    "ping": 0
+  },
+  "pass": false,
+  "details": "rd00=0(exp=1), wrFF=0(exp=1), valFF=0(exp=255), val00=0, ping=0(exp=1), wr00=0(exp=1), rdFF=0(exp=1)",
+  "notes": "MCP23017 @0x26; valFF=255 (IODIRA=0xFF)"
+}

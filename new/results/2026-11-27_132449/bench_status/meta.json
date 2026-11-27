@@ -1,0 +1,31 @@
+{
+  "bench": "bench_status",
+  "timestamp": "2026-11-27T13:29:57.9163233+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1206,
+  "sram": 264,
+  "expected": {
+    "size_status": 1,
+    "err_ok": 0,
+    "ok_ok": 1,
+    "r_ok_ok": 1,
+    "r_er_ok": 0,
+    "size_res16": 3,
+    "r_ok_val": 1234
+  },
+  "range": null,
+  "info": null,
+  "actual": {
+    "r_ok_ok": 1,
+    "r_er_ok": 0,
+    "size_res16": 3,
+    "size_status": 1,
+    "ok_ok": 1,
+    "err_ok": 0,
+    "r_ok_val": 1234
+  },
+  "pass": true,
+  "details": "size_status=1, err_ok=0, ok_ok=1, r_ok_ok=1, r_er_ok=0, size_res16=3, r_ok_val=1234",
+  "notes": "static_assert на сборке — если не собралось, бенч не запустится"
+}

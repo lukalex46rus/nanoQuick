@@ -1,0 +1,30 @@
+{
+  "bench": "bench_spi",
+  "timestamp": "2026-11-27T13:29:39.1123342+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1696,
+  "sram": 218,
+  "expected": {
+    "SPCR4": 80,
+    "SPSR4": 0
+  },
+  "range": null,
+  "info": [
+    "us_4",
+    "us_2",
+    "rx4",
+    "rx2"
+  ],
+  "actual": {
+    "us_4": 3,
+    "rx4": 0,
+    "us_2": 1,
+    "SPCR4": 80,
+    "rx2": 0,
+    "SPSR4": 0
+  },
+  "pass": true,
+  "details": "SPCR4=80, SPSR4=0, us_4=3(info), us_2=1(info), rx4=0(info), rx2=0(info)",
+  "notes": "rx4=165, rx2=60 — только с джампером D11–D12; без него — плавающий/0"
+}
