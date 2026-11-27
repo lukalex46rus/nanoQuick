@@ -1,0 +1,26 @@
+{
+  "bench": "bench_micros_confirm",
+  "timestamp": "2026-11-27T12:00:11.8338871+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 2004,
+  "sram": 226,
+  "expected": null,
+  "range": {
+    "span_dif": {
+      "Max": 5,
+      "Min": -5
+    }
+  },
+  "info": null,
+  "actual": {
+    "span_dif": null,
+    "ours_1k": null,
+    "span_cor": null,
+    "span_our": null,
+    "core_1k": null
+  },
+  "pass": false,
+  "details": "span_dif=MISSING(range=-5..5)",
+  "notes": "span_dif ~0; ours_1k < core_1k (наши дешевле)"
+}

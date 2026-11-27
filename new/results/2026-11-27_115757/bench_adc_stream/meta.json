@@ -1,0 +1,36 @@
+{
+  "bench": "bench_adc_stream",
+  "timestamp": "2026-11-27T11:58:36.6173731+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 1796,
+  "sram": 229,
+  "expected": null,
+  "range": {
+    "samples": {
+      "Max": 9300,
+      "Min": 8500
+    },
+    "last": {
+      "Max": 250,
+      "Min": 200
+    },
+    "per_us": {
+      "Max": 120,
+      "Min": 105
+    }
+  },
+  "info": [
+    "missed"
+  ],
+  "actual": {
+    "per_us": null,
+    "last": null,
+    "expect": null,
+    "missed": null,
+    "samples": null
+  },
+  "pass": false,
+  "details": "samples=MISSING(range=8500..9300), last=MISSING(range=200..250), per_us=MISSING(range=105..120), missed=MISSING(info)",
+  "notes": "missed — информационно (0 идеально, >0 допустимо)"
+}

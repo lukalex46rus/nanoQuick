@@ -1,0 +1,15 @@
+{
+  "bench": "bench_gpio",
+  "timestamp": "2026-11-27T11:59:06.5378318+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 604,
+  "sram": 142,
+  "expected": null,
+  "range": null,
+  "info": null,
+  "actual": {},
+  "pass": null,
+  "details": "visual",
+  "notes": "LED D13 мигает; результат визуальный"
+}

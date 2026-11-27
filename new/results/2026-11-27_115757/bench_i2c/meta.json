@@ -1,0 +1,26 @@
+{
+  "bench": "bench_i2c",
+  "timestamp": "2026-11-27T11:59:46.6800185+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 2028,
+  "sram": 206,
+  "expected": {
+    "TWBR": 72
+  },
+  "range": null,
+  "info": [
+    "ack",
+    "first",
+    "us"
+  ],
+  "actual": {
+    "TWBR": null,
+    "ack": null,
+    "first": null,
+    "us": null
+  },
+  "pass": false,
+  "details": "TWBR=MISSING(exp=72), ack=MISSING(info), first=MISSING(info), us=MISSING(info)",
+  "notes": "ack >= 1 при устройстве на шине; first = адрес MCP (0x20..0x27)"
+}

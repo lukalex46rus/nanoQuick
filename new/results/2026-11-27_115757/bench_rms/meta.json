@@ -1,0 +1,31 @@
+{
+  "bench": "bench_rms",
+  "timestamp": "2026-11-27T12:01:04.2698294+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 2180,
+  "sram": 243,
+  "expected": {
+    "synth_const": 239,
+    "isqrt_65000": 254,
+    "synth_alt": 254,
+    "isqrt_max": 65535
+  },
+  "range": {
+    "real_rms": {
+      "Max": 250,
+      "Min": 200
+    }
+  },
+  "info": null,
+  "actual": {
+    "real_rms": null,
+    "isqrt_max": null,
+    "isqrt_65000": null,
+    "synth_const": null,
+    "synth_alt": null
+  },
+  "pass": false,
+  "details": "synth_const=MISSING(exp=239), isqrt_65000=MISSING(exp=254), synth_alt=MISSING(exp=254), isqrt_max=MISSING(exp=65535), real_rms=MISSING(range=200..250)",
+  "notes": "synth_const=239 (DC), synth_alt=254 (sqrt(65000)); real_rms ~239"
+}

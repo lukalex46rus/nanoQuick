@@ -1,0 +1,15 @@
+{
+  "bench": "bench_tick",
+  "timestamp": "2026-11-27T12:02:01.7735867+03:00",
+  "commit": "nogit",
+  "fqbn": "arduino:avr:nano:cpu=atmega328old",
+  "flash": 868,
+  "sram": 150,
+  "expected": null,
+  "range": null,
+  "info": null,
+  "actual": {},
+  "pass": null,
+  "details": "visual",
+  "notes": "toggle D8 — меандр 500 Гц; результат только осциллографом"
+}
