@@ -3,6 +3,12 @@
 #include "src/time/Tick.h"
 #include "dbg.h"
 
+// ============================================================================
+// bench_mcu — PortB/C/D: flip на выходе/входе, set/clr маской.
+// Платформа: ATmega328P/328, Nano. Контекст: main.
+// Ожидание: out_before=0, out_after=1; mask_keep=2 (только PB1);
+// pull_before=1, pull_after=0 (flip на входе переключает pull-up).
+// ============================================================================
 using namespace hw;
 
 void setup() {

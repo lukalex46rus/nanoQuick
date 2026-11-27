@@ -5,6 +5,12 @@
 #include "src/time/Deadline.h"
 #include "dbg.h"
 
+// ============================================================================
+// bench_probe — ISR census: регистры Timer2 + counter/delta/TIFR2 раз в 1 с.
+// Платформа: ATmega328P/328, Nano. Контекст: main.
+// Ожидание: TIMSK2=2, TCCR2A=2, TCCR2B=4, OCR2A=249, OCR2B=0;
+// delta ~1000 за 1 с; TIFR2=0 в норме.
+// ============================================================================
 using Led = hw::board::D13;
 
 static time::Period report;
