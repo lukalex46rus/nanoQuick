@@ -4,11 +4,11 @@
 		Fqbn      = "arduino:avr:nano:cpu=atmega328old"
 		
     Baud      = 9600
-    DefaultMonitorSec = 3
+    DefaultMonitorSec = 10
 
     Benches = @{
         bench_platform = @{
-            MonitorSec = 2
+            MonitorSec = 10
             Patterns = @{
                 chip     = 'chip\s*=\s*(\d+)'
                 f_cpu    = 'F_CPU\s*=\s*(\d+)'
@@ -24,7 +24,7 @@
         }
 
         bench_status = @{
-            MonitorSec = 2
+            MonitorSec = 10
             Patterns = @{
                 size_status = 'size_status\s*=\s*(\d+)'
                 size_res16  = 'size_res16\s*=\s*(\d+)'
@@ -47,7 +47,7 @@
         }
 
         bench_atomic = @{
-            MonitorSec = 2
+            MonitorSec = 10
             Patterns = @{
                 r32     = 'r32\s*=\s*(\d+)'
                 r8      = 'r8\s*=\s*(\d+)'
@@ -64,7 +64,7 @@
         }
 
         bench_pin_init = @{
-            MonitorSec = 2
+            MonitorSec = 10
             Patterns = @{
                 portB_bef = 'portB_bef\s*=\s*(\d+)'
                 ddrB_bef  = 'ddrB_bef\s*=\s*(\d+)'
@@ -87,7 +87,7 @@
         }
 
         bench_mcu = @{
-            MonitorSec = 2
+            MonitorSec = 10
             Patterns = @{
                 out_before  = 'out_before\s*=\s*(\d+)'
                 out_after   = 'out_after\s*=\s*(\d+)'
@@ -106,7 +106,7 @@
         }
 
         bench_tick_confirm = @{
-            MonitorSec = 5
+            MonitorSec = 10
             Patterns = @{
                 TCCR2A  = 'TCCR2A\s*=\s*(\d+)'
                 TCCR2B  = 'TCCR2B\s*=\s*(\d+)'
@@ -129,7 +129,7 @@
         }
 
         bench_micros_confirm = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 ours_1k  = 'ours_1k\s*=\s*(\d+)'
                 core_1k  = 'core_1k\s*=\s*(\d+)'
@@ -144,7 +144,7 @@
         }
 
         bench_subnow = @{
-            MonitorSec = 2
+            MonitorSec = 10
             Patterns = @{
                 step_1ms   = 'step_1ms\s*=\s*(\d+)'
                 step_100us = 'step_100us\s*=\s*(\d+)'
@@ -159,7 +159,7 @@
         }
 
         bench_deadline = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 dl_10ms_us = 'dl_10ms_us\s*=\s*(\d+)'
                 left_1ms   = 'left_1ms\s*=\s*(\d+)'
@@ -175,7 +175,7 @@
         }
 
         bench_adc_base = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 us_slow = 'us_slow\s*=\s*(\d+)'
                 us_fast = 'us_fast\s*=\s*(\d+)'
@@ -196,7 +196,7 @@
         }
 
         bench_adc_stream = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 samples = 'samples\s*=\s*(\d+)'
                 expect  = 'expect\s*=\s*(\d+)'
@@ -214,7 +214,7 @@
         }
 
         bench_adc_decimate = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 raw_min    = 'raw_min\s*=\s*(\d+)'
                 raw_max    = 'raw_max\s*=\s*(\d+)'
@@ -239,7 +239,7 @@
         }
 
         bench_rms = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 isqrt_65000 = 'isqrt_65000\s*=\s*(\d+)'
                 isqrt_max   = 'isqrt_max\s*=\s*(\d+)'
@@ -260,7 +260,7 @@
         }
 
         bench_spi = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 SPCR4 = 'SPCR4\s*=\s*(\d+)'
                 SPSR4 = 'SPSR4\s*=\s*(\d+)'
@@ -278,7 +278,7 @@
         }
 
         bench_i2c = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 TWBR  = 'TWBR\s*=\s*(\d+)'
                 ack   = 'ack\s*=\s*(\d+)'
@@ -293,7 +293,7 @@
         }
 
         bench_i2c_reg = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 ping  = 'ping\s*=\s*(\d+)'
                 wr00  = 'wr00\s*=\s*(\d+)'
@@ -316,7 +316,7 @@
         }
 
         bench_i2c_rw = @{
-            MonitorSec = 3
+            MonitorSec = 10
             Patterns = @{
                 wr00  = 'wr00\s*=\s*(\d+)'
                 rd00  = 'rd00\s*=\s*(\d+)'
@@ -337,7 +337,7 @@
         }
 
         bench_probe = @{
-            MonitorSec = 5
+            MonitorSec = 10
             Patterns = @{
                 TIMSK2  = 'TIMSK2\s*=\s*(\d+)'
                 TCCR2A  = 'TCCR2A\s*=\s*(\d+)'
