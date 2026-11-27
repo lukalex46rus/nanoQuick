@@ -15,18 +15,20 @@ void setup() {
     dbg::begin(9600);
     time::init();
 
-    // flip на выходе: уровень меняется
+    // flip на выходе: уровень меняется (читаем PORTB — защёлку, не PINB:
+    // синхронизатор PINx даёт задержку 0.5..1.5 такта, чтение сразу после
+    // записи вернёт старое значение).
     PortB::dirOut(_BV(PB0));
     PortB::clr(_BV(PB0));
-    bool b0 = PortB::read() & _BV(PB0);
+    bool b0 = (PORTB & _BV(PB0)) != 0;
     PortB::flip(_BV(PB0));
-    bool b1 = PortB::read() & _BV(PB0);
+    bool b1 = (PORTB & _BV(PB0)) != 0;
 
     // set/clr маской не трогает соседние биты
     PortB::dirOut(_BV(PB1) | _BV(PB2));
     PortB::clr(_BV(PB1) | _BV(PB2));
     PortB::set(_BV(PB1));
-    uint8_t pb = PortB::read() & (_BV(PB1) | _BV(PB2));  // 0b10
+    uint8_t pb = PORTB & (_BV(PB1) | _BV(PB2));  // 0b10
 
     // flip на входе: переключается pull-up (PORTx)
     PortD::dirIn(_BV(PD0));
