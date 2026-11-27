@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "../src/hw/Atomic.h"
-#include "../src/time/Tick.h"
+#include "src/hw/Atomic.h"
+#include "src/time/Tick.h"
 #include "dbg.h"
 
 void setup() {

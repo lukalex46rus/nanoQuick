@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include "../src/time/Tick.h"
-#include "../src/peripheral/AdcStream.h"
-#include "../src/logic/Rms.h"
+#include "src/time/Tick.h"
+#include "src/peripheral/AdcStream.h"
+#include "src/logic/Rms.h"
 #include "dbg.h"
 
 // ============================================================================

@@ -1,6 +1,6 @@
-#include "../src/hw/Pin.h"
-#include "../src/time/Tick.h"
-#include "../src/time/Deadline.h"
+#include "src/hw/Pin.h"
+#include "src/time/Tick.h"
+#include "src/time/Deadline.h"
 
 // ============================================================================
 // bench_tick — Period(1 мс) на D8: toggle каждую миллисекунду.

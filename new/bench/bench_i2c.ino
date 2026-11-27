@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "../src/time/Tick.h"
-#include "../src/bus/I2c.h"
+#include "src/time/Tick.h"
+#include "src/bus/I2c.h"
 #include "dbg.h"
 
 using Bus = bus::I2c<100000, true>;

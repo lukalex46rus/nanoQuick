@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include "../src/time/Tick.h"
-#include "../src/peripheral/AdcStream.h"
-#include "../src/logic/Decimator.h"
+#include "src/time/Tick.h"
+#include "src/peripheral/AdcStream.h"
+#include "src/logic/Decimator.h"
 #include "dbg.h"
 
 using AdcPro = adc::AdcStream<adc::Ref::AVcc, adc::Clk::Div128, adc::BANDGAP>;

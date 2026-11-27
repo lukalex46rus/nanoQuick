@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "../src/hw/Pin.h"
-#include "../src/time/Tick.h"
+#include "src/hw/Pin.h"
+#include "src/time/Tick.h"
 #include "dbg.h"
 
 using P  = hw::board::D8;      // PB0

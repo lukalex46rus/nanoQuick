@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "../src/hw/Mcu.h"
-#include "../src/time/Tick.h"
+#include "src/hw/Mcu.h"
+#include "src/time/Tick.h"
 #include "dbg.h"
 
 using namespace hw;

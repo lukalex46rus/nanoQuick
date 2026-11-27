@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "../src/time/Tick.h"
-#include "../src/peripheral/Adc.h"
+#include "src/time/Tick.h"
+#include "src/peripheral/Adc.h"
 #include "dbg.h"
 
 // ============================================================================

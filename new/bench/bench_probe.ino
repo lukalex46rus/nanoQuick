@@ -1,8 +1,8 @@
 #include <Arduino.h>
-#include "../src/hw/Pin.h"
-#include "../src/hw/Atomic.h"
-#include "../src/time/Tick.h"
-#include "../src/time/Deadline.h"
+#include "src/hw/Pin.h"
+#include "src/hw/Atomic.h"
+#include "src/time/Tick.h"
+#include "src/time/Deadline.h"
 #include "dbg.h"
 
 using Led = hw::board::D13;

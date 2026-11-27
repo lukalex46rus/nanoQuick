@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "./src/hw/Mcu.h"
-#include "./src/base/Status.h"
+#include "src/hw/Mcu.h"
+#include "src/base/Status.h"
 #include "dbg.h"
 
 void setup() {

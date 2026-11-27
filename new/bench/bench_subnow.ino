@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "../src/time/Tick.h"
+#include "src/time/Tick.h"
 #include "dbg.h"
 
 void setup() {
