@@ -34,7 +34,7 @@ struct Decimator {
     static constexpr uint16_t N       = (uint16_t)(1u << SHIFT_N);
     static constexpr uint8_t  SHIFT_O = EXTRA;                  // 10 + EXTRA бит
 
-    uint32_t sum;
+    uint32_t sum;   // сырая сумма N выборок; валидна после ok(), до след. feed/reset
     uint16_t cnt;
 
     // constexpr с явными нулями: гарантирует инициализацию (в отличие от
