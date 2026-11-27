@@ -143,20 +143,22 @@
             Notes = "span_dif ~0; ours_1k < core_1k (наши дешевле)"
         }
 
-        bench_subnow = @{
-            MonitorSec = 10
-            Patterns = @{
-                step_1ms   = 'step_1ms\s*=\s*(\d+)'
-                step_100us = 'step_100us\s*=\s*(\d+)'
-                us_1000    = 'us\(1000\)\s*=\s*(\d+)'
-            }
-            Expected = @{
-                step_1ms   = 250
-                step_100us = 25
-                us_1000    = 250
-            }
-            Notes = "16 МГц: 250/25/250; 8 МГц: 125/12/125 — править Expected под плату"
-        }
+    	bench_subnow = @{
+        	MonitorSec = 2
+        	Patterns = @{
+            	step_1ms   = 'step_1ms\s*=\s*(\d+)'
+            	step_100us = 'step_100us\s*=\s*(\d+)'
+            	us_1000    = 'us\(1000\)\s*=\s*(\d+)'
+        	}
+        	Expected = @{
+            	us_1000 = 250          # чистая арифметика, точно
+        	}
+        	Range = @{
+            	step_1ms   = @{ Min = 248; Max = 260 }   # delay(1): квант Timer0 + overhead
+            	step_100us = @{ Min = 24;  Max = 30 }    # delayMicroseconds + 2×subNow overhead
+        	}
+        	Notes = "16 МГц; us(1000)=250 точно; шаги времени — Range (overhead вызовов). 8 МГц: править под плату"
+    	}
 
         bench_deadline = @{
             MonitorSec = 10
@@ -289,7 +291,7 @@
                 TWBR = 72
             }
             Info = @("ack", "first", "us")
-            Notes = "ack >= 1 при устройстве на шине; first = адрес MCP (0x20..0x27)"
+            Notes = "ack>=1 при устройстве на шине; ack=0 = MCP не подключён (стенд), не баг кода; first=0x26=38"
         }
 
         bench_i2c_reg = @{
