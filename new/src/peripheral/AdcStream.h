@@ -30,6 +30,7 @@
 // ============================================================================
 #include <avr/io.h>
 #include "../hw/Mcu.h"
+#include "../hw/Atomic.h"
 #include "../base/Status.h"
 #include "Adc.h"   // Ref, Clk, каналы
 
@@ -118,7 +119,10 @@ struct AdcStream {
         return k;
     }
 
-    static uint32_t missed() { return detail::missed; }
+    // missed пишет consumer, но контракт шапки («main+ISR» для типа)
+    // допускает чтение из другого контекста — читаем через hw::load
+    // (3 такта), чтобы не ловить разорванное 32-битное чтение.
+    static uint32_t missed() { return hw::load(detail::missed); }
 };
 
 } // namespace adc
