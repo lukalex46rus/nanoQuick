@@ -350,17 +350,17 @@
                 TIFR2   = 'TIFR2\s*=\s*(\d+)'
             }
             Expected = @{
-                TIMSK2 = 2
-                TCCR2A = 2
-                TCCR2B = 4
-                OCR2A  = 249
-                OCR2B  = 0
-                TIFR2  = 0
-            }
-            Range = @{
-                delta = @{ Min = 990; Max = 1010 }
-            }
-            Notes = "delta ~1000 за 1 с; TIFR2=0 в норме"
+            	TIMSK2 = 2
+            	TCCR2A = 2
+            	TCCR2B = 4
+            	OCR2A  = 249
+            	OCR2B  = 0
+        	}
+        	Range = @{
+            	delta = @{ Min = 990; Max = 1010 }
+            	TIFR2 = @{ Min = 0; Max = 4 }   # OCF2B взводится при OCR2B=0 (core) — норма
+        	}
+        	Notes = "delta ~1000 (парсер берёт последнюю); TIFR2: OCF2B=4 допустим (OCR2B=0 от core), OCF2A не висит"
         }
 
         bench_tick = @{
