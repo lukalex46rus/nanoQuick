@@ -111,9 +111,23 @@ $ok = Invoke-Stage "Подготовка '$workDir'" {
     New-Item -ItemType Directory -Path $workDir  | Out-Null
     New-Item -ItemType Directory -Path $buildDir | Out-Null
     New-Item -ItemType Directory -Path $logDir   | Out-Null
+
+    # скетч
     Copy-Item -Path $selected.FullName -Destination $inoTarget -Force
+
+    # dbg.h (если есть рядом со скетчами)
+    $dbgSrc = Join-Path $BenchDir "dbg.h"
+    if (Test-Path $dbgSrc) {
+        Copy-Item -Path $dbgSrc -Destination (Join-Path $workDir "dbg.h") -Force
+        Write-Host "OK: dbg.h скопирован" -ForegroundColor Green
+    } else {
+        Write-Host "dbg.h в bench\\ не найден — пропускаем" -ForegroundColor Yellow
+    }
+
+    # src
     Copy-Item -Path $SrcDir -Destination $srcTarget -Recurse -Force
-    Write-Host "OK: скетч и src скопированы в tmp" -ForegroundColor Green
+
+    Write-Host "OK: скетч, dbg.h и src скопированы в tmp" -ForegroundColor Green
 } $null
 
 # ---------- 4. Пути к логам ----------
@@ -190,7 +204,6 @@ if (-not $script:Stop) {
 }
 
 # ---------- 8. Монитор (только если прошивка ок) ----------
-# ---------- 8. Монитор ----------
 if (-not $script:Stop) {
     $script:Stage = "Монитор"
 
