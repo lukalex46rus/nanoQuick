@@ -127,20 +127,24 @@
             Notes = "16 МГц; us(1000)=250 точно; шаги времени — Range (jitter). 8 МГц: править под плату"
         }
         bench_deadline = @{
-            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
-            Auto = $true; Nm = $false
+            MonitorMode = "WaitAll"
+            HardCapSec  = 20
+            GraceSec    = 1
+            Auto        = $true; Nm = $false
             Patterns = @{
-                dl_10ms_us = 'dl_10ms_us\s*=\s*(\d+)'
-                left_1ms   = 'left_1ms\s*=\s*(\d+)'
-                sd_100us   = 'sd_100us\s*=\s*(\d+)'
-                sd_5us_up  = 'sd_5us_up\s*=\s*(\d+)'
+                dl_10ms_us  = 'dl_10ms_us\s*=\s*(\d+)'
+                left_1ms    = 'left_1ms\s*=\s*(\d+)'
+                sd_100us    = 'sd_100us\s*=\s*(\d+)'
+                sd_5us_up   = 'sd_5us_up\s*=\s*(\d+)'
+                sd_65535us  = 'sd_65535us\s*=\s*(\d+)'
             }
             Range = @{
-                dl_10ms_us = @{ Min = 9900; Max = 10100 }
-                sd_100us   = @{ Min = 96;   Max = 108 }
-                sd_5us_up  = @{ Min = 4;    Max = 16 }
+                dl_10ms_us  = @{ Min = 9900; Max = 10100 }
+                sd_100us    = @{ Min = 96;   Max = 108 }
+                sd_5us_up   = @{ Min = 4;    Max = 16 }
+                sd_65535us  = @{ Min = 64000; Max = 67000 }   # B1: 32-bit round-up, не 0/8 баг 16-bit дал бы ~0 -> FAIL
             }
-            Notes = "sd_5us_up ~8 (16M) — округление вверх"
+            Notes = "sd_5us_up ~8 (округление вверх); sd_65535us ~65536 — B1 защита от wrap us_+3 (16-bit баг -> ~0)"
         }
         bench_adc_base = @{
             MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
@@ -256,6 +260,23 @@
             Info = @("lb_ok", "lb_val")
             Notes = "115200 @16M: UBRR=16 U2X=1 err~2.12%; TX без джампера PASS; lb_ok/lb_val=1/165 с джампером D0-D1 (СНЯТЬ перед прошивкой!)"
         }
+        bench_softuart = @{
+            MonitorMode = "WaitAll"
+            HardCapSec  = 20
+            GraceSec    = 1
+            Auto        = $true; Nm = $false
+            Patterns = @{
+                tx_us  = 'tx_us\s*=\s*(\d+)'
+                lb_ok  = 'lb_ok\s*=\s*(\d+)'
+                lb_val = 'lb_val\s*=\s*(\d+)'
+                pat_ok = 'pat_ok\s*=\s*(\d+)'
+            }
+            Range = @{
+                tx_us = @{ Min = 950; Max = 1150 }   # ~1041 @9600/16M, допуск на overhead
+            }
+            Info = @("lb_ok", "lb_val", "pat_ok")
+            Notes = "TX без джампера PASS (tx_us); lb/pat — только с джампером D2-D3; калибровка TX_OVERHEAD по tx_us"
+        }
         bench_i2c = @{
             MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
             Auto = $false; Nm = $false
@@ -301,6 +322,110 @@
             Expected = @{ wr00 = 1; rd00 = 1; val00 = 0; wrFF = 1; rdFF = 1 }
             Info = @("valFF")
             Notes = "pointer-less read: val00=0; valFF — информационно"
+        }
+        bench_mcp23017 = @{
+            MonitorMode = "WaitAll"
+            HardCapSec  = 20
+            GraceSec    = 1
+            Auto        = $false
+            Nm          = $false
+            Requires    = "MCP23017 @0x26 (A2/A1/A0=110)"
+            Patterns = @{
+                init_ok  = 'init_ok\s*=\s*(\d+)'
+                pu_read  = 'pu_read\s*=\s*(\d+)'
+                dir_ok   = 'dir_ok\s*=\s*(\d+)'
+                wr_ok    = 'wr_ok\s*=\s*(\d+)'
+                olat_val = 'olat_val\s*=\s*(\d+)'
+                gpio_val = 'gpio_val\s*=\s*(\d+)'
+                zero_ok  = 'zero_ok\s*=\s*(\d+)'
+                back_in  = 'back_in\s*=\s*(\d+)'
+                back_dir = 'back_dir\s*=\s*(\d+)'
+                back_pu  = 'back_pu\s*=\s*(\d+)'
+            }
+            Expected = @{
+                init_ok  = 1
+                dir_ok   = 1
+                wr_ok    = 1
+                olat_val = 43981     # 0xABCD — защёлка, не зависит от нагрузки
+                zero_ok  = 1
+                back_in  = 1
+                back_dir = 255       # реальная проверка IODIRA
+                back_pu  = 255       # реальная проверка GPPUA
+            }
+            Range = @{
+                pu_read = @{ Min = 65000; Max = 65535 }   # обвес может тянуть 1-2 пина
+        }
+        Info = @("gpio_val")
+        Notes = "100 кГц; pu_read Range (обвес); olat_val — защёлка (детерминированно); gpio_val=OLAT только без нагрузки; init не сбрасывает OLAT — бенч делает write16(0) перед финальным init"
+        }
+        bench_debounce = @{
+            MonitorMode = "WaitAll"
+            HardCapSec  = 20
+            GraceSec    = 1
+            Auto        = $true
+            Nm          = $false
+            Patterns = @{
+                bounce_rose = 'bounce_rose\s*=\s*(\d+)'
+                bounce_fell = 'bounce_fell\s*=\s*(\d+)'
+                glitch_rose = 'glitch_rose\s*=\s*(\d+)'
+                clean_rose  = 'clean_rose\s*=\s*(\d+)'
+                clean_fell  = 'clean_fell\s*=\s*(\d+)'
+                stable_end  = 'stable_end\s*=\s*(\d+)'
+            }
+            Expected = @{
+                bounce_rose = 1
+                bounce_fell = 1
+                glitch_rose = 0
+                clean_rose  = 1
+                clean_fell  = 1
+                stable_end  = 0
+            }
+            Notes = "синтетика, железо не нужно; дребезг 5×2мс подавлен MS=20; глюк 5мс не проходит"
+        }
+        bench_hd44780 = @{
+            MonitorMode = "WaitAll"
+            HardCapSec  = 20
+            GraceSec    = 1
+            Auto        = $false
+            Nm          = $false
+            Requires    = "LCD HD44780 20x4: RS=D2 EN=D3 D4=D4 D5=D5 D6=D6 D7=D7, RW=GND"
+            Patterns = @{
+                init_us  = 'init_us\s*=\s*(\d+)'
+                cmd_us   = 'cmd_us\s*=\s*(\d+)'
+                clear_us = 'clear_us\s*=\s*(\d+)'
+                visual   = 'visual\s*=\s*(\d+)'
+            }
+            Range = @{
+                init_us  = @{ Min = 45000; Max = 65000 }
+                cmd_us   = @{ Min = 40;    Max = 120 }
+                clear_us = @{ Min = 1900;  Max = 2400 }
+            }
+            Info = @("visual")
+            Notes = "UART-часть проверяет тайминги; текст на 4 строках — визуально. RW=GND обязателен (write-only)"
+        }
+        bench_dfplayer = @{
+            MonitorMode = "WaitAll"
+            HardCapSec  = 20
+            GraceSec    = 1
+            Auto        = $true
+            Nm          = $false
+            Patterns = @{
+                chk_vol  = 'chk_vol\s*=\s*(\d+)'
+                bad_vol  = 'bad_vol\s*=\s*(\d+)'
+                bad_trk  = 'bad_trk\s*=\s*(\d+)'
+                send_ok  = 'send_ok\s*=\s*(\d+)'
+                frame_us = 'frame_us\s*=\s*(\d+)'
+            }
+            Expected = @{
+                chk_vol = 65254      # 0xFEE6: cmd=0x06 param=15
+                bad_vol = 1
+                bad_trk = 1
+                send_ok = 1
+            }
+            Range = @{
+                frame_us = @{ Min = 9000; Max = 13000 }   # 10 байт × ~1041 мкс @9600
+            }
+            Notes = "протокол+валидация без железа PASS; звук — на слух (DFPlayer TX=D8 через 1кОм, SD с MP3/0001.mp3); пауза 30мс между командами"
         }
         bench_probe = @{
             MonitorMode = "WaitSec"; WaitSec = 60

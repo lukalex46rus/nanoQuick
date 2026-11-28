@@ -15,6 +15,10 @@
 | TWI | bus::I2c (polling) | занят: PC4 SDA(A4), PC5 SCL(A5); подтяжка внутренняя (~30-50к) или внешняя (2.2-4.7к для 400к) |
 | INT0/INT1, PCINT | будущие кнопки/энкодер | свободны |
 | GPIO PortB/C/D | hw::Port / hw::Pin | set/clr RMW не атомарны vs ISR; flip атомарен; read() PINx с задержкой синхронизатора |
+| GPIO (soft UART) | bus::SoftUartTx/Rx (bit-bang) | свободен: любые пины кроме занятых периферией; несколько экземпляров |
+| MCP23017 (внешний) | peripheral::Mcp23017<ADDR,BUS> | на шине TWI: 0x20..0x27, до 8 чипов × 16 GPIO = 128 линий |
+| GPIO (LCD) | peripheral::Hd44780<RS,EN,D4..D7> | 6 пинов, write-only (RW=GND); свободен выбор пинов |
+| GPIO (DFPlayer) | peripheral::DfPlayer<TX_PIN> | 1 пин TX через SoftUartTx; IRQ off ~10мс/кадр |
 
 ## Примечания
 - USART0 один: bus::Uart<BAUD> и dbg и Serial не сосуществуют. init() перезаписывает настройки.

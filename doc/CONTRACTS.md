@@ -119,6 +119,40 @@ Guard: hw/Mcu.h (#error на чип и F_CPU). Другие чипы/платы 
   замер ~14.01), частота занижена ~3.7%. @Div128/16M ≈ 8928 SPS.
 - Oversampling/decimation — отдельный consumer (logic/Decimator).
 
+## peripheral/Mcp23017.h
+- Mcp23017<ADDR,BUS>: 16-битный GPIO расширитель по I2C. 0 Б RAM, все static.
+  ADDR 0x20..0x27 (static_assert). BUS — тип bus::I2c<HZ,PULLUP>.
+  Несколько чипов = несколько типов; массив состояний — у consumer.
+- init(pullUp=false): форсирует IOCON=0 (BANK=0, SEQOP=0), IODIRA/B=0xFFFF (все INPUT),
+  GPPUA/B=0xFFFF или 0. Fail-fast на первой ошибке I2C.
+- read16(): Result<uint16_t>, атомарный снимок обоих портов (GPIOA защёлкивает A+B
+  при SEQOP=0). low byte=A, high byte=B. Эквивалент Adafruit readGPIOAB().
+- readA()/readB(): одиночный порт, экономит 1 байт обмена.
+- write16(val): OLATA/B sequential write. Только для OUTPUT пинов.
+- setDir(mask): бит=1 — INPUT (конвенция MCP, противоположно AVR DDR).
+- setPullUp(mask): бит=1 — pull-up (~100к), только для INPUT.
+- writeReg/readReg: низкоуровневый доступ к произвольному регистру.
+- Прерывания INTA/INTB не используются (polling). HAEN не включается.
+- Таймауты: BUS::msFor(n) на каждую операцию. Ошибки I2c пропагируются как есть.
+
+## peripheral/Hd44780.h
+- Hd44780<RS,EN,D4,D5,D6,D7>: LCD 4-bit write-only, 0 Б RAM. RW=GND (busy не читается).
+  init(): 40мс power-on + 0x03×3 + 0x02 (4-bit) + 0x28/0x08/0x01/0x06/0x0C.
+  command()/data(): два ниббла, EN pulse 1 мкс. clear/home 2 мс, прочие 50 мкс.
+  Задержки cycle-counted (__builtin_avr_delay_cycles + delayMs<N> цикл) — Tick не нужен.
+- setCursor(col,row): 20×4, адреса 0x00/0x40/0x14/0x54. Вне диапазона — игнор.
+- print(const char*) / print(uint32_t): без snprintf. display(on,cursor,blink).
+- Blocking: init ~50 мс однократно, команды ~50 мкс, clear ~2 мс. Не из ISR.
+
+## peripheral/DfPlayer.h
+- DfPlayer<TX_PIN,BAUD=9600>: DFPlayer Mini поверх SoftUartTx, TX-only, 0 Б RAM.
+  Кадр 10 байт на стеке: 7E FF 06 CMD 00 PH PL CH CL EF.
+  checksum = -(FF+06+CMD+00+PH+PL) big-endian. FEEDBACK=0 (без подтверждения).
+- volume(0..30), playTrack(1..65535), playMp3(1..9999), stop(), reset(), sendCmd().
+  BadParam при vol>30 или n==0. Возврат Status от SoftUartTx::write.
+- Пауза >=30 мс между командами — ответственность вызывающего.
+- Ответы модуля не читаются (fire-and-forget). IRQ off ~10 мс на кадр @9600.
+
 ## logic/Decimator.h
 - Decimator<EXTRA>: N=4^EXTRA выборок, sum>>EXTRA → (10+EXTRA) бит. EXTRA 0..4. 6 Б RAM.
   constexpr-конструктор. feed() неблокирующий.
@@ -138,6 +172,14 @@ Guard: hw/Mcu.h (#error на чип и F_CPU). Другие чипы/платы 
 - feed() неблокирующий: NotReady пока окно не полно; ok → floor(RMS). HW_INLINE (hot path).
 - isqrt32: digit-by-digit, без деления/float, ~15 итераций, обычный inline (раз в окно, не hot).
 - AC-only (вычитание среднего) — отдельный модуль, не здесь.
+
+## logic/Debounce.h
+- Debounce<MS=20>: антидребезг цифрового входа, 13 Б RAM (Deadline 9 + 4 bool).
+  init(initial): стартовое состояние без ложного фронта. update(raw): периодически.
+  Алгоритм: изменение сырого перезапускает срок; подтверждение после MS стабильности.
+  stable(): подтверждённое состояние. rose()/fell(): фронты read-and-clear.
+  Задержка реакции = MS. Дребезг короче MS подавляется. Не для энкодеров.
+- Один контекст на объект. Требует time::init().
 
 ## bus/Spi.h
 - SpiMaster<MODE,CLK>: аппаратный SPI master, 0 Б RAM, polling. MODE 0..3, CLK из SpiClk.
@@ -194,3 +236,19 @@ Guard: hw/Mcu.h (#error на чип и F_CPU). Другие чипы/платы 
   (байт прочитан, буфер освобождён, value недействителен). Флаги читаются ДО UDR0.
 - read(dst,n,toMs): до n байт или первой ошибки, возвращает count. Повреждённый кадр останавливает набор.
 - Один контекст (main), не из ISR. USART0 один — два Uart<> с разным baud конфликтуют.
+
+## bus/SoftUart.h
+- SoftUartTx<PIN,BAUD,TX_OVERHEAD=8>: bit-bang TX на любом GPIO. 0 Б RAM.
+  PIN — hw::Pin<Port,Bit>. Несколько экземпляров на разных пинах допустимы.
+  init(): Out+High (idle). put(b): Guard + 10 бит cycle-counted (__builtin_avr_delay_cycles).
+  write(p,n)/write(s): цикл put. IRQ off ~1 мс/байт @9600. Всегда ok().
+- SoftUartRx<PIN,BAUD,RX_OVERHEAD=6>: bit-bang RX на любом GPIO. 0 Б RAM.
+  init(): InPullUp. available(): !read() (LOW=start). get(toMs=5): cycle-budget poll
+  (НЕ Deadline! Timer2 ISR заморожен под Guard) + sample center + stop check.
+  Timeout/IoFault/ok. IRQ off до toMs + ~1 байт. toMs=0: одна проверка.
+- BAUD <= 250000. BIT_CYCLES = F_CPU/BAUD (truncation error < 0.7% @115200).
+  TX_OVERHEAD/RX_OVERHEAD — калибруются бенчем (scope/logic analyzer).
+- Не конфликтует с USART0/bootloader/Serial/dbg. Свободные пины: D2-D9, A0-A5.
+  Избегать D0/D1 (hardware USART), D10-D13 при активном SPI.
+- Trade-off vs hardware Uart: любой пин / несколько实例ций, но CPU-bound,
+  IRQ off на.transfer, ниже max baud. Для production real-time — hardware Uart.
