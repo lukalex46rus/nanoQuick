@@ -187,8 +187,8 @@ Guard: hw/Mcu.h (#error на чип и F_CPU). Другие чипы/платы 
 - put(b,toMs=5): ждёт UDRE (transmit buffer empty) с Deadline → Timeout. Запись в буфер,
   НЕ гарантия физической передачи. При TXEN=0 UDRE=1 (буфер пуст) → put вернёт ok, байт не уйдёт
   (тихая потеря). Контракт: только после init (TXEN=1). Физическую передачу гарантирует flush().
-- write(p,n,toMs): бюджет на ВЕСЬ блок. msFor(n)=10*n*1000/BAUD+2 (constexpr).
-  write(const char*,toMs): void, best-effort (остановка на первой ошибке put).
+- write(const char*,toMs): возвращает Status (общий Deadline на всю строку).
+  Для консистентности с write(uint8_t*,n). Best-effort остановка на Timeout.
 - flush(toMs): ждёт TXC (последний бит ушёл), сброс write-1-clear. Для сна/смены baud/deinit.
 - available(): RXC без ожидания. get(toMs): ждёт RXC → Timeout; FE/DOR/UP → Overflow
   (байт прочитан, буфер освобождён, value недействителен). Флаги читаются ДО UDR0.

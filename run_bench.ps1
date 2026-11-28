@@ -128,9 +128,15 @@ function Prepare-WorkDir([string]$inoPath, [string]$benchName) {
     return @{ workDir=$workDir; buildDir=$buildDir; ino=$inoTarget }
 }
 
-function Invoke-Compile([string]$workDir, [string]$buildDir, [string]$logPath) {
-    & arduino-cli compile --fqbn $fqbn --build-path $buildDir $workDir 2>&1 |
-        Tee-Object -FilePath $logPath | Out-Null
+# R1.2: компиляция + size; $quiet — тихо в файл (All) или Tee в консоль (одиночный).
+function Invoke-Compile([string]$workDir, [string]$buildDir, [string]$logPath, [bool]$quiet) {
+    if ($quiet) {
+        & arduino-cli compile --fqbn $fqbn --build-path $buildDir $workDir 2>&1 |
+            Set-Content -Path $logPath -Encoding UTF8
+    } else {
+        & arduino-cli compile --fqbn $fqbn --build-path $buildDir $workDir 2>&1 |
+            Tee-Object -FilePath $logPath | Out-Null
+    }
     $ok = ($LASTEXITCODE -eq 0)
     $flash = -1; $sram = -1
     if ($ok) {
@@ -178,6 +184,7 @@ function Invoke-Nm([string]$elf, [string]$outDir, [string]$benchName, [bool]$ena
     return $nmLog
 }
 
+# R2.2: WaitAll с guard на пустой Patterns (ждём hardCapSec, не мгновенный break).
 function Invoke-Monitor {
     param([string]$logPath, [string]$mode, [int]$hardCapSec, [int]$waitSec, [int]$graceSec, $patterns)
     if ($mode -eq "Visual") { return @{ mode="Visual"; seconds=0 } }
@@ -197,16 +204,24 @@ function Invoke-Monitor {
         $deadline = if ($useDuration) { (Get-Date).AddSeconds($waitSec + 10) } else { (Get-Date).AddSeconds($waitSec) }
         while (((Get-Date) -lt $deadline) -and (-not $p.HasExited)) { Start-Sleep -Milliseconds 200 }
     } elseif ($mode -eq "WaitAll") {
-        $deadline = (Get-Date).AddSeconds($hardCapSec)
-        $keys = @($patterns.Keys)
-        while (((Get-Date) -lt $deadline) -and (-not $p.HasExited)) {
-            Start-Sleep -Milliseconds 200
-            if (Test-Path $logPath) {
-                $txt = Get-Content $logPath -Raw -ErrorAction SilentlyContinue
-                if ($txt) {
-                    $all = $true
-                    foreach ($k in $keys) { if ($txt -notmatch $patterns[$k]) { $all = $false; break } }
-                    if ($all) { break }
+        # Guard: если Patterns пуст, ждём hardCapSec (не мгновенный break)
+        if (-not $patterns -or $patterns.Count -eq 0) {
+            $deadline = (Get-Date).AddSeconds($hardCapSec)
+            while (((Get-Date) -lt $deadline) -and (-not $p.HasExited)) { Start-Sleep -Milliseconds 200 }
+        } else {
+            $deadline = (Get-Date).AddSeconds($hardCapSec)
+            $keys = @($patterns.Keys)
+            while (((Get-Date) -lt $deadline) -and (-not $p.HasExited)) {
+                Start-Sleep -Milliseconds 200
+                if (Test-Path $logPath) {
+                    $txt = Get-Content $logPath -Raw -ErrorAction SilentlyContinue
+                    if ($txt) {
+                        $all = $true
+                        foreach ($k in $keys) {
+                            if ($txt -notmatch $patterns[$k]) { $all = $false; break }
+                        }
+                        if ($all) { break }
+                    }
                 }
             }
         }
@@ -361,13 +376,16 @@ foreach ($b in $benches) {
     }
 
     # --- Компиляция (лог ВСЕГДА в results) ---
+    # All: тихо в файл; одиночный: Tee в консоль. При ошибке — tail-20 в консоль.
     $compileLog = Join-Path $benchResults "compile.txt"
-    $cmp = Invoke-Compile $w.workDir $w.buildDir $compileLog
+    $compileQuiet = ($Bench -eq "All")
+    $cmp = Invoke-Compile $w.workDir $w.buildDir $compileLog $compileQuiet
     $r.flash = $cmp.flash; $r.sram = $cmp.sram
     $r.logs.compile = "compile.txt"
     if (-not $cmp.ok) {
-        $r.status = "COMPILE_FAIL"; $r.details = "see $compileLog"
         Write-Host "  COMPILE FAILED (log: $compileLog)" -ForegroundColor Red
+        if ($compileQuiet) { Get-Content $compileLog -Tail 20 | Write-Host }
+        $r.status = "COMPILE_FAIL"; $r.details = "see $compileLog"
         $r | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $benchResults "meta.json") -Encoding UTF8
         $results += [pscustomobject]@{ bench=$b; status=$r.status; flash=$r.flash; sram=$r.sram; mode="-"; seconds=0; details=$r.details; notes=$bs.Notes; requires=$bs.Requires }
         continue

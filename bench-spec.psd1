@@ -1,5 +1,10 @@
 @{
-    Fqbn              = "arduino:avr:nano:cpu=atmega328"
+    # Fqbn: выберите под ваш bootloader:
+    #   New bootloader (большинство клонов, официальные Nano post-2018): arduino:avr:nano:cpu=atmega328
+    #   Old bootloader (старые Nano, некоторые китайские):               arduino:avr:nano:cpu=atmega328old
+    # При UPLOAD_FAIL проверьте соответствие. Bootloader old не прошивается с cpu=atmega328 и наоборот.
+    
+    Fqbn              = "arduino:avr:nano:cpu=atmega328old"
     Baud              = 9600
     DefaultHardCapSec = 20
     DefaultGraceSec   = 1
