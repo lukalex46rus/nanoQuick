@@ -8,7 +8,7 @@
 // Ресурсы:   — (только типы; состояние — 6 байт на объект).
 // Предусл.:  вход 10-битный (0..1023, АЦП 328P); поток выборок равномерный;
 //            для про-тира нужен ~1 LSB шума (dither), иначе ENOB не растёт.
-// Контекст:  — (тип; usable в main+ISR, если сам объект не разделяется).
+// Контекст:  один контекст на объект; общий main+ISR — под Guard.
 // Огранич.:  EXTRA 0..4 (N = 1, 4, 16, 64, 256). Выход — (10 + EXTRA) бит:
 //            sum >> EXTRA оставляет 2^EXTRA в знаменателе как «дробную
 //            часть» шкалы. Это НЕ среднее (среднее — sum >> 2*EXTRA), а
@@ -34,7 +34,7 @@ struct Decimator {
     static constexpr uint16_t N       = (uint16_t)(1u << SHIFT_N);
     static constexpr uint8_t  SHIFT_O = EXTRA;                  // 10 + EXTRA бит
 
-    uint32_t sum;   // сырая сумма N выборок; валидна после ok(), до след. feed/reset
+    uint32_t sum;   // сырая сумма последнего блока; живёт после ok() до первого feed() следующего
     uint16_t cnt;
 
     // constexpr с явными нулями: гарантирует инициализацию (в отличие от
@@ -45,11 +45,12 @@ struct Decimator {
     // value — (10+EXTRA)-бит (про-тир). Для 10-бит среднего: value >> EXTRA.
     // Сырая sum доступна после ok(), до следующего feed()/reset().
     base::Result<uint16_t> feed(uint16_t s) {
-        sum += s;
+        if (cnt == 0) sum = 0;              // новый блок: сырая sum прошлого блока
+        sum += s;                           // остаётся доступной до этого момента
         if (++cnt < N)
             return base::Result<uint16_t>{ 0, base::err(base::Err::NotReady) };
         uint16_t v = (uint16_t)(sum >> SHIFT_O);
-        sum = 0; cnt = 0;
+        cnt = 0;                            // sum НЕ трогаем — сырой тир жив после ok()
         return base::Result<uint16_t>{ v, base::ok() };
     }
 

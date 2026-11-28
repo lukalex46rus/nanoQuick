@@ -102,6 +102,9 @@ HW_INLINE uint16_t subNow() {
 
 constexpr uint32_t ms(uint32_t v)  { return v; }
 constexpr uint32_t sec(uint32_t v) { return v * 1000UL; }
-constexpr uint16_t us(uint16_t v)  { return (uint16_t)(v / SUB_US); }
+// Округление ВВЕРХ, синхронно с ShortDeadline::armUs: us() — конвертер для
+// arm(us(x)), таймаут не должен срабатывать раньше запрошенного.
+// 32 бита: на AVR unsigned int = 16 бит, v+SUB_US-1 завернулось бы при v >= 65533.
+constexpr uint16_t us(uint16_t v)  { return (uint16_t)(((uint32_t)v + (SUB_US - 1U)) / SUB_US); }
 
 } // namespace time

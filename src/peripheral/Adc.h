@@ -62,11 +62,12 @@ struct Adc {
 
     // ADMUX = REF | ch: детерминированно (ADLAR=0, reserved=0) и дешевле —
     // один out вместо RMW in/andi/or/out. REF — шаблонный, свернётся в константу.
+    // BadParam проверяется первым (дёшево, не требует чтения SFR).
     // NotReady при ADEN=0 (ADC не инициализирован), Busy — конверсия в полёте.
     static base::Status start(uint8_t ch) {
+        if (!validChannel(ch))     return base::err(base::Err::BadParam);
         if (!(ADCSRA & _BV(ADEN))) return base::err(base::Err::NotReady);
         if (ADCSRA & _BV(ADSC))    return base::err(base::Err::Busy);
-        if (!validChannel(ch))     return base::err(base::Err::BadParam);
         ADMUX = (uint8_t)REF | (ch & 0x0F);      // REFS из шаблона, ADLAR=0, MUX=ch
         ADCSRA |= _BV(ADSC);
         return base::ok();

@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "src/hw/Pin.h"
-#include "src/time/Tick.h"
+#include "../src/hw/Pin.h"
+#include "../src/time/Tick.h"
 #include "dbg.h"
 
 using P  = hw::board::D8;      // PB0
@@ -24,22 +24,21 @@ void setup() {
 
     // 3) init(Out, High) — сразу высокий уровень
     P::init(hw::Dir::Out, hw::Level::High);
-    bool outHigh = P::read();      // 1
+    bool outHigh = (PORTB & _BV(PB0)) != 0;   // PORTB, не PINB
 
-    // 4) toggle через PINx: проверяем PORTB-защёлку (PINB отстаёт на 0.5..1.5 такта)
+    // 4) toggle через PINx: проверяем PORTB-защёлку (PINB отстаёт)
     P::toggle();
     bool afterToggle = (PORTB & _BV(PB0)) != 0;  // 0
 
     dbg::text("\r\n=== X1: Pin init ===\r\n");
-
-    dbg::row("portB_bef =", portBefore & 0x03);   // 2 (PB1 pull-up; PB5 не считаем)
-    dbg::row("ddrB_bef  =", ddrBefore  & 0x03);   // 0 (PB0/PB1; PB5=bootloader LED)
-    dbg::row("portB_aft =", portAfter  & 0x03);   // 2 (PB1 pull-up жив, PB0 clr)
+    // Маски 0x03: PB5/D13 трогает old bootloader (DDRB|=32), не считаем.
+    dbg::row("portB_bef =", portBefore & 0x03);   // 2 (PB1 pull-up)
+    dbg::row("ddrB_bef  =", ddrBefore  & 0x03);   // 0
+    dbg::row("portB_aft =", portAfter  & 0x03);   // 2 (PB1 жив, PB0 clr)
     dbg::row("ddrB_aft  =", ddrAfter   & 0x03);   // 1 (PB0 out)
-    
-    dbg::row("pull_read =", pull);         // 1
-    dbg::row("out_high  =", outHigh);      // 1
-    dbg::row("tog_read  =", afterToggle);  // 0
+    dbg::row("pull_read =", pull);                // 1
+    dbg::row("out_high  =", outHigh);             // 1
+    dbg::row("tog_read  =", afterToggle);         // 0
     dbg::flush();
 }
 

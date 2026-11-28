@@ -18,17 +18,19 @@
 //            std-заголовки (<type_traits> нет); builtin __is_integral
 //            в avr-gcc 7.3 нет (появился в GCC 14); __is_enum — есть.
 //            Внешние STL (ArduinoSTL/avr-libstdcpp) не тянем.
-// Зависит:   <avr/interrupt.h>, <stdint.h>.
+// Зависит:   <avr/interrupt.h>, <stdint.h>, <stddef.h>.
 // ============================================================================
 #include <avr/interrupt.h>
 #include <stdint.h>
+#include <stddef.h>    // wchar_t
 
 namespace hw {
 
 // ---- Минимальный is_integral (замена std::is_integral) --------------------
 // Специализации по ФУНДАМЕНТАЛЬНЫМ типам: uint8_t..int64_t — их typedef,
 // покрываются автоматически. char / signed char / unsigned char — три разных
-// типа; bool — отдельный. float/double сознательно исключены.
+// типа; bool — отдельный. wchar_t/char16_t/char32_t — тоже целые (как в std).
+// float/double сознательно исключены.
 namespace detail {
 template<typename T> struct is_integral { static constexpr bool value = false; };
 #define HW_INTEGRAL(T) template<> struct is_integral<T> { static constexpr bool value = true; }
@@ -38,6 +40,7 @@ HW_INTEGRAL(short); HW_INTEGRAL(unsigned short);
 HW_INTEGRAL(int); HW_INTEGRAL(unsigned int);
 HW_INTEGRAL(long); HW_INTEGRAL(unsigned long);
 HW_INTEGRAL(long long); HW_INTEGRAL(unsigned long long);
+HW_INTEGRAL(wchar_t); HW_INTEGRAL(char16_t); HW_INTEGRAL(char32_t);
 #undef HW_INTEGRAL
 } // namespace detail
 

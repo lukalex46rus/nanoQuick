@@ -12,6 +12,9 @@
 //            для них отдельный модуль. board:: — карта Nano (D0..A5), не
 //            «Arduino вообще»: на других платах пины другие.
 //            D0/D1 — USART (RX/TX): не трогать при активном Uart.
+//            read() сразу после записи уровня может вернуть старое значение:
+//            синхронизатор PINx отстаёт на 0.5..1.5 такта. Для проверки
+//            только что установленного выхода читать PORTx или выждать ≥2 такта.
 // Зависит:   hw/Mcu.h.
 // ============================================================================
 #include "Mcu.h"
@@ -33,6 +36,8 @@ struct Pin {
     // (пин был входом с pull-up).
     // Для входа порядок dirIn->set/clr безопасен: выхода нет, переключается
     // только pull-up (High) или tri-state (Low).
+    // Приоритет: InPullUp самодостаточен — Level игнорируется (pull-up всегда).
+    // In + Level::High = pull-up; In + Level::Low = tri-state.
     static inline void init(Dir d, Level lv = Level::Low) {
         if (d == Dir::Out) {
             if (lv == Level::High) Port::set(mask); else Port::clr(mask);

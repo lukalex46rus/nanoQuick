@@ -24,13 +24,12 @@
 //            ячейку во время чтения consumer'ом (половина старого, половина
 //            нового) — цена неблокирующего ISR. Потребитель читает быстрее
 //            или принимает потери; для строгого чтения — Guard на чтение.
-//            SAMPLE_RATE — верхняя оценка (14 тактов ADC вместо 13.5),
+//            SAMPLE_RATE — верхняя оценка периода (14 тактов ADC вместо 13.5),
 //            занижает реальную частоту на ~3.7%.
 // Зависит:   hw/Mcu.h, base/Status.h, Adc.h, <avr/io.h>.
 // ============================================================================
 #include <avr/io.h>
 #include "../hw/Mcu.h"
-#include "../hw/Atomic.h"
 #include "../base/Status.h"
 #include "Adc.h"   // Ref, Clk, каналы
 
@@ -45,7 +44,7 @@ namespace detail {
     extern volatile uint16_t buf[BUF_N];
     extern volatile uint8_t  head;   // пишет ISR
     extern uint8_t           tail;   // пишет consumer
-    extern uint32_t          missed; // пишет consumer
+    extern uint32_t          missed; // пишет и читает только consumer (main)
 
     // Ресинхронизация при переполнении (consumer-side).
     // head читается в цикле до стабилизации: ISR может продвинуть head между
@@ -119,10 +118,9 @@ struct AdcStream {
         return k;
     }
 
-    // missed пишет consumer, но контракт шапки («main+ISR» для типа)
-    // допускает чтение из другого контекста — читаем через hw::load
-    // (3 такта), чтобы не ловить разорванное 32-битное чтение.
-    static uint32_t missed() { return hw::load(detail::missed); }
+    // missed пишет и читает только main (sync/take/available) — ISR не трогает,
+    // 32-битное чтение в одном контексте безопасно, Guard не нужен.
+    static uint32_t missed() { return detail::missed; }
 };
 
 } // namespace adc

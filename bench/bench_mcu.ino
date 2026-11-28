@@ -1,23 +1,16 @@
 #include <Arduino.h>
-#include "src/hw/Mcu.h"
-#include "src/time/Tick.h"
+#include "../src/hw/Mcu.h"
+#include "../src/time/Tick.h"
 #include "dbg.h"
 
-// ============================================================================
-// bench_mcu — PortB/C/D: flip на выходе/входе, set/clr маской.
-// Платформа: ATmega328P/328, Nano. Контекст: main.
-// Ожидание: out_before=0, out_after=1; mask_keep=2 (только PB1);
-// pull_before=1, pull_after=0 (flip на входе переключает pull-up).
-// ============================================================================
 using namespace hw;
 
 void setup() {
     dbg::begin(9600);
     time::init();
 
-    // flip на выходе: уровень меняется (читаем PORTB — защёлку, не PINB:
-    // синхронизатор PINx даёт задержку 0.5..1.5 такта, чтение сразу после
-    // записи вернёт старое значение).
+    // flip на выходе: читаем PORTB (защёлку), не PINB — синхронизатор PINx
+    // отстаёт на 0.5..1.5 такта, чтение сразу после записи вернёт старое.
     PortB::dirOut(_BV(PB0));
     PortB::clr(_BV(PB0));
     bool b0 = (PORTB & _BV(PB0)) != 0;
@@ -38,9 +31,9 @@ void setup() {
     uint8_t portD_after  = PORTD & _BV(PD0);
 
     dbg::text("\r\n=== X3: Mcu ports ===\r\n");
-    dbg::row("out_before =", b0);          // 0
-    dbg::row("out_after  =", b1);          // 1
-    dbg::row("mask_keep  =", pb);          // 2 (только PB1)
+    dbg::row("out_before =", b0);           // 0
+    dbg::row("out_after  =", b1);           // 1
+    dbg::row("mask_keep  =", pb);           // 2
     dbg::row("pull_before=", portD_before); // 1
     dbg::row("pull_after =", portD_after);  // 0
     dbg::flush();

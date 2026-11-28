@@ -1,30 +1,25 @@
 @{
-    # Общие настройки
-    # Fqbn      = "arduino:avr:nano:cpu=atmega328"
-		Fqbn      = "arduino:avr:nano:cpu=atmega328old"
-		
-    Baud      = 9600
-    DefaultMonitorSec = 10
+    Fqbn              = "arduino:avr:nano:cpu=atmega328"
+    Baud              = 9600
+    DefaultHardCapSec = 20
+    DefaultGraceSec   = 1
 
     Benches = @{
         bench_platform = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
-                chip     = 'chip\s*=\s*(\d+)'
-                f_cpu    = 'F_CPU\s*=\s*(\d+)'
-                sz_stat  = 'sz_stat\s*=\s*(\d+)'
-                sz_res   = 'sz_res\s*=\s*(\d+)'
+                chip    = 'chip\s*=\s*(\d+)'
+                f_cpu   = 'F_CPU\s*=\s*(\d+)'
+                sz_stat = 'sz_stat\s*=\s*(\d+)'
+                sz_res  = 'sz_res\s*=\s*(\d+)'
             }
-            Expected = @{
-                chip    = 328
-                sz_stat = 1
-                sz_res  = 3
-            }
+            Expected = @{ chip = 328; sz_stat = 1; sz_res = 3 }
             Notes = "chip=328 для 328P; f_cpu=16000000 (5V) или 8000000 (3.3V)"
         }
-
         bench_status = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 size_status = 'size_status\s*=\s*(\d+)'
                 size_res16  = 'size_res16\s*=\s*(\d+)'
@@ -34,37 +29,24 @@
                 r_ok_val    = 'r_ok_val\s*=\s*(\d+)'
                 r_er_ok     = 'r_er_ok\s*=\s*(\d+)'
             }
-            Expected = @{
-                size_status = 1
-                size_res16  = 3
-                ok_ok       = 1
-                err_ok      = 0
-                r_ok_ok     = 1
-                r_ok_val    = 1234
-                r_er_ok     = 0
-            }
+            Expected = @{ size_status = 1; size_res16 = 3; ok_ok = 1; err_ok = 0; r_ok_ok = 1; r_ok_val = 1234; r_er_ok = 0 }
             Notes = "static_assert на сборке — если не собралось, бенч не запустится"
         }
-
         bench_atomic = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 r32     = 'r32\s*=\s*(\d+)'
                 r8      = 'r8\s*=\s*(\d+)'
                 enum_rt = 'enum_rt\s*=\s*(\d+)'
                 mono    = 'mono\s*=\s*(\d+)'
             }
-            Expected = @{
-                r32     = 3735928559   # 0xDEADBEEF
-                r8      = 165          # 0xA5
-                enum_rt = 2            # Timeout
-                mono    = 1
-            }
-            Notes = "r32 — hex 0xDEADBEEF = 3735928559; static_assert trait — сборка = pass"
+            Expected = @{ r32 = 3735928559; r8 = 165; enum_rt = 2; mono = 1 }
+            Notes = "r32 = 0xDEADBEEF; static_assert trait — сборка = pass"
         }
-
         bench_pin_init = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 portB_bef = 'portB_bef\s*=\s*(\d+)'
                 ddrB_bef  = 'ddrB_bef\s*=\s*(\d+)'
@@ -74,20 +56,17 @@
                 out_high  = 'out_high\s*=\s*(\d+)'
                 tog_read  = 'tog_read\s*=\s*(\d+)'
             }
-        	Expected = @{
-            	portB_bef = 2
-            	ddrB_bef  = 0
-            	portB_aft = 2      # PB1 pull-up остаётся; PB0 clr
-            	ddrB_aft  = 1
-            	pull_read = 1
-            	out_high  = 1
-            	tog_read  = 0
-        	}
-        	Notes = "маски 0x03: PB5/D13 трогает old bootloader (DDRB|=32); PINB читать нельзя сразу после записи — проверяем PORTB"
+            Expected = @{
+                portB_bef = 2; ddrB_bef = 0
+                portB_aft = 2          # PB1 pull-up жив, PB0 clr (маска 0x03 в бенче)
+                ddrB_aft  = 1
+                pull_read = 1; out_high = 1; tog_read = 0
+            }
+            Notes = "маски 0x03 в бенче: PB5/D13 трогает bootloader; PORTB-защёлка не PINB (синхронизатор)"
         }
-
         bench_mcu = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 out_before  = 'out_before\s*=\s*(\d+)'
                 out_after   = 'out_after\s*=\s*(\d+)'
@@ -95,18 +74,12 @@
                 pull_before = 'pull_before\s*=\s*(\d+)'
                 pull_after  = 'pull_after\s*=\s*(\d+)'
             }
-            Expected = @{
-                out_before  = 0
-                out_after   = 1
-                mask_keep   = 2
-                pull_before = 1
-                pull_after  = 0
-            }
-            Notes = "flip на входе переключает pull-up (pull_before=1, pull_after=0)"
+            Expected = @{ out_before = 0; out_after = 1; mask_keep = 2; pull_before = 1; pull_after = 0 }
+            Notes = "читаем PORTB (защёлку), не PINB: синхронизатор PINx отстаёт 0.5..1.5 такта"
         }
-
         bench_tick_confirm = @{
-            MonitorSec = 10
+            MonitorMode = "WaitSec"; WaitSec = 60
+            Auto = $true; Nm = $false
             Patterns = @{
                 TCCR2A  = 'TCCR2A\s*=\s*(\d+)'
                 TCCR2B  = 'TCCR2B\s*=\s*(\d+)'
@@ -116,20 +89,13 @@
                 core_ms = 'core_ms\s*=\s*(\d+)'
                 diff    = 'diff\s*=\s*(-?\d+)'
             }
-            Expected = @{
-                TCCR2A = 2
-                TCCR2B = 4
-                OCR2A  = 249
-                TIMSK2 = 2
-            }
-            Range = @{
-                diff = @{ Min = -2; Max = 2 }
-            }
-            Notes = "diff в допуске ±2; counter монотонен"
+            Expected = @{ TCCR2A = 2; TCCR2B = 4; OCR2A = 249; TIMSK2 = 2 }
+            Range = @{ diff = @{ Min = -2; Max = 2 } }
+            Notes = "60 с — дрейф counter vs millis(); парсер берёт последний diff"
         }
-
         bench_micros_confirm = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 10; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 ours_1k  = 'ours_1k\s*=\s*(\d+)'
                 core_1k  = 'core_1k\s*=\s*(\d+)'
@@ -137,31 +103,27 @@
                 span_cor = 'span_cor\s*=\s*(\d+)'
                 span_dif = 'span_dif\s*=\s*(-?\d+)'
             }
-            Range = @{
-                span_dif = @{ Min = -5; Max = 5 }
-            }
-            Notes = "span_dif ~0; ours_1k < core_1k (наши дешевле)"
+            Range = @{ span_dif = @{ Min = -5; Max = 5 } }
+            Notes = "span_dif ~0; ours_1k < core_1k"
         }
-
-    	bench_subnow = @{
-        	MonitorSec = 2
-        	Patterns = @{
-            	step_1ms   = 'step_1ms\s*=\s*(\d+)'
-            	step_100us = 'step_100us\s*=\s*(\d+)'
-            	us_1000    = 'us\(1000\)\s*=\s*(\d+)'
-        	}
-        	Expected = @{
-            	us_1000 = 250          # чистая арифметика, точно
-        	}
-        	Range = @{
-            	step_1ms   = @{ Min = 248; Max = 260 }   # delay(1): квант Timer0 + overhead
-            	step_100us = @{ Min = 24;  Max = 30 }    # delayMicroseconds + 2×subNow overhead
-        	}
-        	Notes = "16 МГц; us(1000)=250 точно; шаги времени — Range (overhead вызовов). 8 МГц: править под плату"
-    	}
-
+        bench_subnow = @{
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
+            Patterns = @{
+                step_1ms   = 'step_1ms\s*=\s*(\d+)'
+                step_100us = 'step_100us\s*=\s*(\d+)'
+                us_1000    = 'us\(1000\)\s*=\s*(\d+)'
+            }
+            Expected = @{ us_1000 = 250 }
+            Range = @{
+                step_1ms   = @{ Min = 248; Max = 260 }   # delay(1) квант Timer0 + overhead
+                step_100us = @{ Min = 24;  Max = 30 }    # delayMicroseconds + 2×subNow overhead
+            }
+            Notes = "16 МГц; us(1000)=250 точно; шаги времени — Range (jitter). 8 МГц: править под плату"
+        }
         bench_deadline = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 dl_10ms_us = 'dl_10ms_us\s*=\s*(\d+)'
                 left_1ms   = 'left_1ms\s*=\s*(\d+)'
@@ -173,11 +135,11 @@
                 sd_100us   = @{ Min = 96;   Max = 108 }
                 sd_5us_up  = @{ Min = 4;    Max = 16 }
             }
-            Notes = "sd_5us_up ~8 (16M) — проверка B1 (округление вверх); 4..16 — допуск"
+            Notes = "sd_5us_up ~8 (16M) — округление вверх"
         }
-
         bench_adc_base = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 us_slow = 'us_slow\s*=\s*(\d+)'
                 us_fast = 'us_fast\s*=\s*(\d+)'
@@ -196,9 +158,9 @@
             }
             Notes = "us_slow ~104..110; us_fast ~13..16; bg ~225 при AVcc 5V"
         }
-
         bench_adc_stream = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 samples = 'samples\s*=\s*(\d+)'
                 expect  = 'expect\s*=\s*(\d+)'
@@ -207,16 +169,16 @@
                 last    = 'last\s*=\s*(\d+)'
             }
             Range = @{
-                samples = @{ Min = 8500; Max = 9300 }   # ~8928 @16M
+                samples = @{ Min = 8500; Max = 9300 }
                 per_us  = @{ Min = 105;  Max = 120 }
                 last    = @{ Min = 200;  Max = 250 }
             }
             Info = @("missed")
             Notes = "missed — информационно (0 идеально, >0 допустимо)"
         }
-
         bench_adc_decimate = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 raw_min    = 'raw_min\s*=\s*(\d+)'
                 raw_max    = 'raw_max\s*=\s*(\d+)'
@@ -239,9 +201,9 @@
             Info = @("raw_spread", "dec_spread", "dec_count")
             Notes = "dec_min ~955 (про-тир, 12-bit); avg_min ~238 (средний, 10-bit)"
         }
-
         bench_rms = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
             Patterns = @{
                 isqrt_65000 = 'isqrt_65000\s*=\s*(\d+)'
                 isqrt_max   = 'isqrt_max\s*=\s*(\d+)'
@@ -249,20 +211,14 @@
                 synth_alt   = 'synth_alt\s*=\s*(\d+)'
                 real_rms    = 'real_rms\s*=\s*(\d+)'
             }
-            Expected = @{
-                isqrt_65000 = 254
-                isqrt_max   = 65535
-                synth_const = 239
-                synth_alt   = 254
-            }
-            Range = @{
-                real_rms = @{ Min = 200; Max = 250 }
-            }
+            Expected = @{ isqrt_65000 = 254; isqrt_max = 65535; synth_const = 239; synth_alt = 254 }
+            Range = @{ real_rms = @{ Min = 200; Max = 250 } }
             Notes = "synth_const=239 (DC), synth_alt=254 (sqrt(65000)); real_rms ~239"
         }
-
         bench_spi = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $false; Nm = $true
+            Requires = "jumper D11-D12 (MOSI-MISO loopback)"
             Patterns = @{
                 SPCR4 = 'SPCR4\s*=\s*(\d+)'
                 SPSR4 = 'SPSR4\s*=\s*(\d+)'
@@ -271,31 +227,48 @@
                 rx4   = 'rx4\s*=\s*(\d+)'
                 rx2   = 'rx2\s*=\s*(\d+)'
             }
-            Expected = @{
-                SPCR4 = 80   # 0x50
-                SPSR4 = 0
-            }
+            Expected = @{ SPCR4 = 80; SPSR4 = 0 }
             Info = @("us_4", "us_2", "rx4", "rx2")
             Notes = "rx4=165, rx2=60 — только с джампером D11–D12; без него — плавающий/0"
         }
-
+        bench_uart = @{
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $true; Nm = $false
+            Patterns = @{
+                ubrr     = 'ubrr\s*=\s*(\d+)'
+                u2x      = 'u2x\s*=\s*(\d+)'
+                err_p100 = 'err_p100\s*=\s*(\d+)'
+                tx_us    = 'tx_us\s*=\s*(\d+)'
+                lb_ok    = 'lb_ok\s*=\s*(\d+)'
+                lb_val   = 'lb_val\s*=\s*(\d+)'
+            }
+            Expected = @{ u2x = 1 }
+            Range = @{
+                ubrr     = @{ Min = 16; Max = 17 }
+                err_p100 = @{ Min = 0;  Max = 250 }
+                tx_us    = @{ Min = 80; Max = 100 }
+            }
+            Info = @("lb_ok", "lb_val")
+            Notes = "115200 @16M: UBRR=16 U2X=1 err~2.12%; TX без джампера PASS; lb_ok/lb_val=1/165 с джампером D0-D1 (СНЯТЬ перед прошивкой!)"
+        }
         bench_i2c = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $false; Nm = $false
+            Requires = "MCP23017 @0x26 (A2/A1/A0=110) or other I2C device"
             Patterns = @{
                 TWBR  = 'TWBR\s*=\s*(\d+)'
                 ack   = 'ack\s*=\s*(\d+)'
                 first = 'first\s*=\s*(\d+)'
                 us    = 'us\s*=\s*(\d+)'
             }
-            Expected = @{
-                TWBR = 72
-            }
+            Expected = @{ TWBR = 72 }
             Info = @("ack", "first", "us")
-            Notes = "ack>=1 при устройстве на шине; ack=0 = MCP не подключён (стенд), не баг кода; first=0x26=38"
+            Notes = "ack>=1 при устройстве; ack=0 = MCP не подключён (стенд), не баг кода; first=0x26=38"
         }
-
         bench_i2c_reg = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $false; Nm = $false
+            Requires = "MCP23017 @0x26 (A2/A1/A0=110)"
             Patterns = @{
                 ping  = 'ping\s*=\s*(\d+)'
                 wr00  = 'wr00\s*=\s*(\d+)'
@@ -305,20 +278,13 @@
                 rdFF  = 'rdFF\s*=\s*(\d+)'
                 valFF = 'valFF\s*=\s*(\d+)'
             }
-            Expected = @{
-                ping  = 1
-                wr00  = 1
-                rd00  = 1
-                val00 = 0
-                wrFF  = 1
-                rdFF  = 1
-                valFF = 255
-            }
+            Expected = @{ ping = 1; wr00 = 1; rd00 = 1; val00 = 0; wrFF = 1; rdFF = 1; valFF = 255 }
             Notes = "MCP23017 @0x26; valFF=255 (IODIRA=0xFF)"
         }
-
         bench_i2c_rw = @{
-            MonitorSec = 10
+            MonitorMode = "WaitAll"; HardCapSec = 20; GraceSec = 1
+            Auto = $false; Nm = $false
+            Requires = "MCP23017 @0x26 (A2/A1/A0=110)"
             Patterns = @{
                 wr00  = 'wr00\s*=\s*(\d+)'
                 rd00  = 'rd00\s*=\s*(\d+)'
@@ -327,19 +293,13 @@
                 rdFF  = 'rdFF\s*=\s*(\d+)'
                 valFF = 'valFF\s*=\s*(\d+)'
             }
-            Expected = @{
-                wr00  = 1
-                rd00  = 1
-                val00 = 0
-                wrFF  = 1
-                rdFF  = 1
-            }
+            Expected = @{ wr00 = 1; rd00 = 1; val00 = 0; wrFF = 1; rdFF = 1 }
             Info = @("valFF")
             Notes = "pointer-less read: val00=0; valFF — информационно"
         }
-
         bench_probe = @{
-            MonitorSec = 10
+            MonitorMode = "WaitSec"; WaitSec = 60
+            Auto = $true; Nm = $false
             Patterns = @{
                 TIMSK2  = 'TIMSK2\s*=\s*(\d+)'
                 TCCR2A  = 'TCCR2A\s*=\s*(\d+)'
@@ -351,32 +311,20 @@
                 core_ms = 'core_ms\s*=\s*(\d+)'
                 TIFR2   = 'TIFR2\s*=\s*(\d+)'
             }
-            Expected = @{
-            	TIMSK2 = 2
-            	TCCR2A = 2
-            	TCCR2B = 4
-            	OCR2A  = 249
-            	OCR2B  = 0
-        	}
-        	Range = @{
-            	delta = @{ Min = 990; Max = 1010 }
-            	TIFR2 = @{ Min = 0; Max = 4 }   # OCF2B взводится при OCR2B=0 (core) — норма
-        	}
-        	Notes = "delta ~1000 (парсер берёт последнюю); TIFR2: OCF2B=4 допустим (OCR2B=0 от core), OCF2A не висит"
+            Expected = @{ TIMSK2 = 2; TCCR2A = 2; TCCR2B = 4; OCR2A = 249; OCR2B = 0 }
+            Range = @{
+                delta = @{ Min = 990; Max = 1010 }
+                TIFR2 = @{ Min = 0; Max = 4 }   # OCF2B=4 при OCR2B=0 (core) — норма, OCF2A не висит
+            }
+            Notes = "60 с; парсер берёт последний delta; TIFR2: OCF2B допустим (OCR2B=0 от core)"
         }
-
         bench_tick = @{
-            MonitorSec = 0     # без UART — визуально/осциллограф
-            Patterns = @{}
+            MonitorMode = "Visual"; Auto = $true; Nm = $false
             Notes = "toggle D8 — меандр 500 Гц; результат только осциллографом"
-            Visual = $true
         }
-
         bench_gpio = @{
-            MonitorSec = 0
-            Patterns = @{}
+            MonitorMode = "Visual"; Auto = $true; Nm = $false
             Notes = "LED D13 мигает; результат визуальный"
-            Visual = $true
         }
     }
 }
