@@ -15,11 +15,14 @@
 // Огранич.:  Только 8N1 (формат фиксирован, как Spi mode — осознанно минимально).
 //            Только асинхронный режим (UMSEL0=0). baud: UBRR должен влезть
 //            в 12 бит (static_assert); ошибка baud — см. BAUD_ERR_PCT.
-//            put() ждёт UDRE (буфер передатчика пуст) — при TXEN=0 повиснет,
-//            контракт: только после init(). get() с таймаутом: NoDevice нет,
-//            Timeout — данных не пришло; Overflow — байт принят, но FE/DOR/UP
-//            повреждены (value недействителен). read() — best effort до n
-//            байт или первого Timeout, возвращает count.
+
+//            put() ждёт UDRE (буфер передатчика пуст) и пишет в буфер — НЕ гарантия
+//            физической передачи. При TXEN=0 UDRE=1 (буфер пуст) → put вернёт ok,
+//            байт не уйдёт (тихая потеря). Контракт: только после init (TXEN=1).
+//            Физическую передачу гарантирует flush() (TXC). get() с таймаутом:
+//            Timeout — данных не пришло; Overflow — FE/DOR/UP повреждены.
+//            (value недействителен). read() — best effort до n байт или первого
+//            Timeout, возвращает count. 
 //            flush() ждёт TXC (последний бит ушёл) — для сна/смены baud.
 // Зависит:   hw/Mcu.h, base/Status.h, time/Deadline.h.
 // ============================================================================
@@ -40,7 +43,7 @@ namespace detail {
 constexpr uint32_t actualBaud(uint32_t ubrr, bool u2x) {
     return F_CPU / ((u2x ? 8UL : 16UL) * (ubrr + 1UL));
 }
-// Ошибка в сотых процента相对 requested (без знака).
+// Ошибка в сотых процента относительно запрошенного (без знака).
 constexpr uint32_t errPct100(uint32_t want, uint32_t got) {
     return want > got ? ((want - got) * 10000UL) / want
                       : ((got - want) * 10000UL) / want;
@@ -81,9 +84,9 @@ struct Uart {
     static void deinit() { UCSR0B = 0; }             // TXEN/RXEN off, пины свободны
 
     // ---- TX ---------------------------------------------------------------
-    // put: ждёт освобождения буфера передатчика (UDRE). toMs — бюджет ожидания.
-    // Контракт: TXEN=1 (после init, до deinit). При TXEN=0 UDRE не взведётся —
-    // таймаут спасёт от зависания (в отличие от Spi::transfer).
+    // put: ждёт UDRE (буфер передатчика пуст), пишет в UDR0. Запись в буфер,
+    // не физическая передача. При TXEN=0 UDRE=1 → ok без передачи (тихая потеря).
+    // Контракт: TXEN=1 (после init, до deinit). Физическую передачу — flush().
     static base::Status put(uint8_t b, uint32_t toMs = 5) {
         time::Deadline dl; dl.arm(toMs);
         while (!(UCSR0A & _BV(UDRE0)))
